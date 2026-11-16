@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#28142f">
+<title>BABLOOH GAMES</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#24142d;color:#fff}
+body{padding:env(safe-area-inset-top) 14px env(safe-area-inset-bottom);background:radial-gradient(ellipse at 50% 0%,#75427b,#24142d 70%)}
+main{max-width:520px;margin:auto;padding:22px 0 30px}.brand{text-align:center;font-size:clamp(30px,8vw,42px);font-weight:1000;letter-spacing:1px;color:#ffe0f6;text-shadow:0 3px 18px #ff54c8;margin:8px 0 4px}
+.subtitle{text-align:center;color:#f5d8ef;font-size:13px;margin:0 0 24px}.welcome{background:#ffffff12;border:1px solid #ffffff22;border-radius:20px;padding:16px;margin-bottom:16px}
+.welcome strong{font-size:17px}.welcome p{font-size:13px;color:#e8cfe5;margin:5px 0 0}
+.games{display:grid;gap:13px}.game{display:flex;align-items:center;gap:14px;width:100%;padding:14px;border:1px solid #ffffff28;border-radius:20px;background:linear-gradient(120deg,#ffffff1b,#ffffff0b);color:#fff;text-align:left;cursor:pointer}
+.emoji{width:62px;height:62px;flex:none;border-radius:16px;display:grid;place-items:center;font-size:34px;background:#ffffff19}
+.info{flex:1}.info b{display:block;font-size:17px}.info small{display:block;color:#e9cde4;font-size:12px;margin-top:4px}.arrow{font-size:24px;color:#ffc5ec}
+.note{text-align:center;color:#cdaecb;font-size:11px;margin-top:20px}
+#player{display:none;position:fixed;inset:0;background:#24142d;z-index:5;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+#gameFrame{border:0;width:100%;height:100%;display:block;background:#24142d}
+#back{position:absolute;z-index:6;top:calc(env(safe-area-inset-top) + 8px);left:12px;border:1px solid #ffffff55;border-radius:99px;padding:9px 14px;background:#28142ddd;color:white;font-weight:800}
+</style>
+</head>
+<body>
+<main id="home">
+  <h1 class="brand">BABLOOH GAMES</h1>
+  <p class="subtitle">ТВОЯ ИГРОВАЯ ВСЕЛЕННАЯ В TELEGRAM 🩷</p>
+  <section class="welcome"><strong>🎮 Выбирай игру!</strong><p>Играй прямо здесь — ничего устанавливать не нужно.</p></section>
+  <section class="games">
+    <button class="game" onclick="openGame('flappy.html')"><span class="emoji">🐦</span><span class="info"><b>FLAPPY BABLOOH</b><small>Пролетай между препятствиями</small></span><span class="arrow">›</span></button>
+    <button class="game" onclick="openGame('eggs.html')"><span class="emoji">🥚</span><span class="info"><b>БАБЛУХ ЛОВИТ ЯЙЦА</b><small>Лови падающие яйца</small></span><span class="arrow">›</span></button>
+    <button class="game" onclick="openGame('doodle.html')"><span class="emoji">🚀</span><span class="info"><b>DOODLE BABLOOH</b><small>Прыгай всё выше и выше</small></span><span class="arrow">›</span></button>
+  </section>
+  <p class="note">Рекорды сохраняются на устройстве игрока.</p>
+</main>
+<section id="player">
+  <button id="back" onclick="closeGame()">← Все игры</button>
+  <iframe id="gameFrame" title="Игра" allow="fullscreen"></iframe>
+</section>
+<script>
+const tg=window.Telegram?.WebApp;
+if(tg){tg.ready();tg.expand();try{tg.setHeaderColor('#24142d');tg.setBackgroundColor('#24142d');}catch(e){}}
+const home=document.getElementById('home'),player=document.getElementById('player'),frame=document.getElementById('gameFrame');
+function openGame(file){frame.src=file;home.style.display='none';player.style.display='block';if(tg)tg.BackButton.show();}
+function closeGame(){frame.src='about:blank';player.style.display='none';home.style.display='block';if(tg)tg.BackButton.hide();}
+if(tg){tg.BackButton.onClick(closeGame);}
+</script>
+</body>
+</html>
