@@ -22,7 +22,7 @@ canvas{width:100%;height:auto;display:block;touch-action:none;user-select:none;-
 .panel h2{margin:0 0 8px;font-size:26px}.panel p{font-size:14px;line-height:1.45;margin:5px 0 16px}
 button{border:0;border-radius:999px;background:linear-gradient(135deg,#ff55b9,#a94de0);color:white;font-size:16px;font-weight:900;padding:13px 27px;box-shadow:0 5px 0 #82368f;cursor:pointer}
 .hint{font-size:12px;opacity:.75;margin-top:10px}
-</style>
+.loss-image{display:none;width:104px;height:118px;object-fit:contain;float:left;margin:0 12px 8px 0;filter:drop-shadow(0 5px 10px #0003)} .panel:after{content:"";display:block;clear:both}</style>
 </head>
 <body>
 <main>
@@ -32,7 +32,7 @@ button{border:0;border-radius:999px;background:linear-gradient(135deg,#ff55b9,#a
 <canvas id="c" width="440" height="700"></canvas>
 <div class="hud"><span id="score">⚔️ 0</span><span id="miss">❌ 0 / 3</span><span id="best">РЕКОРД: 0</span></div>
 <div class="overlay" id="overlay"><div class="panel">
-<h2 id="title">Готов резать?</h2>
+<img class="loss-image" src="game-over.png" alt="Баблух проиграл"><h2 id="title">Готов резать?</h2>
 <p id="desc">Проводи пальцем или мышью по головам, чтобы разрезать их и получать очки. Не пропусти три головы и не задень бомбу!</p>
 <button id="start">Играть</button>
 </div></div>
@@ -42,34 +42,33 @@ button{border:0;border-radius:999px;background:linear-gradient(135deg,#ff55b9,#a
 <script>
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
 const W=440,H=700,$=id=>document.getElementById(id);
-const headImg=new Image();headImg.src='bablooh-head.png';
+const headImg=new Image();headImg.src='bablooh-head.png'; const targetImgs=['ninja-target-1.png','ninja-target-2.png'].map(src=>{const im=new Image();im.src=src;return im}); let slowBoost=0;
 let state='ready',score=0,missed=0,best=+(localStorage.getItem('babloohNinjaBest')||0);
 let objects=[],halves=[],particles=[],trail=[],last=0,spawnClock=0,pointerDown=false,prevPointer=null,shake=0;
 $('best').textContent='РЕКОРД: '+best;
 function rand(a,b){return a+Math.random()*(b-a)}
 function hud(){$('score').textContent='⚔️ '+score;$('miss').textContent='❌ '+missed+' / 3'}
 function spawn(){
- const bomb=Math.random()<.19;
- const x=rand(65,W-65),size=bomb?rand(34,43):rand(49,65);
- objects.push({type:bomb?'bomb':'head',x,y:H+size,vx:rand(-2.1,2.1),vy:rand(-13.2,-10.4),r:size*.48,size,rot:rand(-.35,.35),vr:rand(-.035,.035),hit:false});
+ const bomb=Math.random()<.17,bonus=!bomb&&Math.random()<.13;
+ const x=rand(65,W-65),size=bomb?rand(36,44):rand(78,94);
+ objects.push({type:bomb?'bomb':bonus?'bonus':'head',imageIndex:Math.floor(Math.random()*2),x,y:H+size,vx:rand(-2.1,2.1),vy:rand(-13.2,-10.4),r:size*.48,size,rot:rand(-.35,.35),vr:rand(-.035,.035),hit:false});
 }
-function reset(){score=0;missed=0;objects=[];halves=[];particles=[];trail=[];spawnClock=0;shake=0;hud();spawn();spawnClock=0}
-function start(){reset();state='playing';$('overlay').style.display='none';last=performance.now();requestAnimationFrame(loop)}
-function finish(reason){submitBabloohScore('ninja', score);
- if(state!=='playing')return;state='over';
+function reset(){score=0;missed=0;objects=[];halves=[];particles=[];trail=[];spawnClock=0;shake=0;slowBoost=0;hud();spawn();spawnClock=0}
+function start(){reset();state='playing';$('overlay').querySelector('.loss-image').style.display='none';$('overlay').style.display='none';last=performance.now();requestAnimationFrame(loop)}
+function finish(reason){if(state!=='playing')return;submitBabloohScore('ninja', score);state='over';
  if(score>best){best=score;localStorage.setItem('babloohNinjaBest',best);$('best').textContent='РЕКОРД: '+best}
  $('title').textContent=reason||'Игра окончена!';
  $('desc').textContent='Твой результат: '+score+'. Рекорд: '+best+'. Попробуешь ещё раз?';
- $('start').textContent='Ещё раз';$('overlay').style.display='flex';
+ $('start').textContent='Ещё раз';$('overlay').querySelector('.loss-image').style.display='block';$('overlay').style.display='flex';
 }
 function burst(x,y,color,n=12){
  for(let i=0;i<n;i++){let a=rand(0,Math.PI*2),s=rand(1.5,5);particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rand(18,34),max:34,size:rand(2,5),color})}
 }
 function splitHead(o,dx,dy){
- o.hit=true;score++;hud();burst(o.x,o.y,'#ff8bcf',17);burst(o.x,o.y,'#fff0a8',8);
+ o.hit=true;score+=o.type==='bonus'?3:1;if(o.type==='bonus')slowBoost=180;hud();burst(o.x,o.y,o.type==='bonus'?'#ffe36b':'#ff8bcf',17);burst(o.x,o.y,'#fff0a8',8);
  const angle=Math.atan2(dy,dx);
- halves.push({x:o.x,y:o.y,size:o.size,rot:o.rot,angle,side:-1,vx:o.vx-2.2,vy:o.vy-1.1,vr:-.095,life:52});
- halves.push({x:o.x,y:o.y,size:o.size,rot:o.rot,angle,side:1,vx:o.vx+2.2,vy:o.vy-1.1,vr:.095,life:52});
+ halves.push({x:o.x,y:o.y,size:o.size,imageIndex:o.imageIndex,rot:o.rot,angle,side:-1,vx:o.vx-2.2,vy:o.vy-1.1,vr:-.095,life:52});
+ halves.push({x:o.x,y:o.y,size:o.size,imageIndex:o.imageIndex,rot:o.rot,angle,side:1,vx:o.vx+2.2,vy:o.vy-1.1,vr:.095,life:52});
 }
 function pointSegmentDistance(px,py,x1,y1,x2,y2){
  const dx=x2-x1,dy=y2-y1,l=dx*dx+dy*dy;
@@ -93,7 +92,10 @@ canvas.addEventListener('pointermove',e=>{if(!pointerDown||state!=='playing')ret
 function release(){pointerDown=false;prevPointer=null}
 canvas.addEventListener('pointerup',release);canvas.addEventListener('pointercancel',release);canvas.addEventListener('lostpointercapture',release);
 function drawBackground(){
- const bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#44204e');bg.addColorStop(.55,'#2b1738');bg.addColorStop(1,'#1e142d');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+ const palettes=[['#44204e','#2b1738','#1e142d'],['#7a3568','#48234f','#251b3e'],['#254c70','#24345c','#17203d'],['#101d3c','#11152f','#080d20']];
+ const phase=Math.min(score/12,palettes.length-1),idx=Math.min(Math.floor(phase),palettes.length-2),t=phase-idx;
+ const mix=(a,b,t)=>{const A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16),r=Math.round(((A>>16)&255)+(((B>>16)&255)-((A>>16)&255))*t),gg=Math.round(((A>>8)&255)+(((B>>8)&255)-((A>>8)&255))*t),bb=Math.round((A&255)+((B&255)-(A&255))*t);return `rgb(${r},${gg},${bb})`};
+ const bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,mix(palettes[idx][0],palettes[idx+1][0],t));bg.addColorStop(.55,mix(palettes[idx][1],palettes[idx+1][1],t));bg.addColorStop(1,mix(palettes[idx][2],palettes[idx+1][2],t));ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
  for(let i=0;i<32;i++){const x=(i*137+29)%W,y=(i*191+17)%H;ctx.fillStyle='#ffffff35';ctx.beginPath();ctx.arc(x,y,1.5+(i%3),0,Math.PI*2);ctx.fill()}
  ctx.fillStyle='#ff8bd422';ctx.fillRect(0,H-8,W,8);
 }
@@ -108,15 +110,18 @@ function drawBomb(o){
 }
 function drawHead(o){
  ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.rot);
- if(headImg.complete&&headImg.naturalWidth){ctx.drawImage(headImg,-o.size/2,-o.size/2,o.size,o.size)}
+ const target=targetImgs[o.imageIndex||0];
+ if(target?.complete&&target.naturalWidth){ctx.drawImage(target,-o.size/2,-o.size/2,o.size,o.size)}
+ else if(headImg.complete&&headImg.naturalWidth){ctx.drawImage(headImg,-o.size/2,-o.size/2,o.size,o.size)}
  else{ctx.fillStyle='#d99a82';ctx.beginPath();ctx.arc(0,0,o.r,0,7);ctx.fill()}
+ if(o.type==='bonus'){ctx.strokeStyle='#ffe36b';ctx.lineWidth=5;ctx.beginPath();ctx.arc(0,0,o.r+5,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#ffe36b';ctx.font='bold 18px sans-serif';ctx.textAlign='center';ctx.fillText('+3',0,-o.r-9)}
  ctx.restore();
 }
 function drawHalf(h){
  ctx.save();ctx.translate(h.x,h.y);ctx.rotate(h.rot);
  const s=h.size;ctx.beginPath();
  if(h.side<0){ctx.rect(-s/2,-s/2,s/2,s)}else{ctx.rect(0,-s/2,s/2,s)}
- ctx.clip();if(headImg.complete&&headImg.naturalWidth)ctx.drawImage(headImg,-s/2,-s/2,s,s);
+ ctx.clip();const target=targetImgs[h.imageIndex||0];if(target?.complete&&target.naturalWidth)ctx.drawImage(target,-s/2,-s/2,s,s);else if(headImg.complete&&headImg.naturalWidth)ctx.drawImage(headImg,-s/2,-s/2,s,s);
  ctx.restore();
 }
 function draw(){
@@ -129,12 +134,12 @@ function draw(){
  ctx.restore();
 }
 function loop(t){
- if(state!=='playing')return;const dt=Math.min((t-last)/16.67,2);last=t;
+ if(state!=='playing')return;let dt=Math.min((t-last)/16.67,2);last=t;if(slowBoost>0){slowBoost=Math.max(0,slowBoost-dt);dt*=.55}
  spawnClock+=dt;if(spawnClock>Math.max(27,58-score*.32)){spawn();if(Math.random()<Math.min(.34,.08+score*.006))spawn();spawnClock=0}
  objects.forEach(o=>{o.x+=o.vx*dt;o.y+=o.vy*dt;o.vy+=.27*dt;o.rot+=o.vr*dt});
  objects=objects.filter(o=>{
   if(o.hit)return false;
-  if(o.y>H+o.size){if(o.type==='head'){missed++;hud();if(missed>=3)finish('Три головы пропущены!')}return false}
+  if(o.y>H+o.size){if(o.type==='head'||o.type==='bonus'){missed++;hud();if(missed>=3)finish('Три цели пропущены!')}return false}
   return true;
  });
  halves.forEach(h=>{h.x+=h.vx*dt;h.y+=h.vy*dt;h.vy+=.28*dt;h.rot+=h.vr*dt;h.life-=dt});
@@ -160,8 +165,11 @@ async function submitBabloohScore(gameId, score) {
       headers: { 'Content-Type': 'application/json', 'apikey': BABLOOH_SUPABASE_KEY },
       body: JSON.stringify({ initData, gameId, score: Math.max(0, Math.floor(score)) })
     });
-    if (!response.ok) console.error('BABLOOH score submit failed:', await response.text());
-  } catch (error) { console.error('BABLOOH score submit error:', error); }
+    const responseText = await response.text();
+    if (!response.ok) { console.error('BABLOOH score submit failed:', gameId, response.status, responseText); return false; }
+    console.info('BABLOOH score accepted:', gameId, Math.max(0, Math.floor(score)), responseText);
+    return true;
+  } catch (error) { console.error('BABLOOH score submit error:', gameId, error); return false; }
 }
 </script>
 </body></html>

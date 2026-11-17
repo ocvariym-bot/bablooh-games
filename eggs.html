@@ -14,11 +14,11 @@ canvas{width:100%;height:auto;display:block;touch-action:none}
 button{border:0;border-radius:999px;background:linear-gradient(135deg,#ff55b9,#a94de0);color:white;font-size:16px;font-weight:900;padding:13px 27px;box-shadow:0 5px 0 #82368f;cursor:pointer}
 .controls{display:flex;gap:12px;margin-top:12px}.controls button{flex:1;padding:14px 8px;font-size:19px;touch-action:none;user-select:none}
 .hint{font-size:12px;opacity:.75;margin-top:10px}
-</style></head><body><main>
+.loss-image{display:none;width:104px;height:118px;object-fit:contain;float:left;margin:0 12px 8px 0;filter:drop-shadow(0 5px 10px #0003)} .panel:after{content:"";display:block;clear:both}</style></head><body><main>
 <h1 class="logo">БАБЛУХ ЛОВИТ ЯЙЦА</h1><div class="tag">ПОЙМАЙ КАК МОЖНО БОЛЬШЕ ЯИЦ 🥚</div>
 <div class="game"><canvas id="c" width="440" height="650"></canvas>
 <div class="hud"><span id="score">🥚 0</span><span id="miss">❌ 0 / 5</span><span id="best">РЕКОРД: 0</span></div>
-<div class="overlay" id="overlay"><div class="panel"><h2 id="title">Ловим яйца!</h2><p id="desc">Управляй своим персонажем и лови падающие яйца в корзину. Не дай пяти яйцам разбиться!</p><button id="start">Играть</button></div></div>
+<div class="overlay" id="overlay"><div class="panel"><img class="loss-image" src="game-over.png" alt="Баблух проиграл"><h2 id="title">Ловим яйца!</h2><p id="desc">Управляй своим персонажем и лови падающие яйца в корзину. Не дай пяти яйцам разбиться!</p><button id="start">Играть</button></div></div>
 </div>
 <div class="controls"><button id="left" aria-label="Влево">◀</button><button id="right" aria-label="Вправо">▶</button></div>
 <div class="hint">Управление: ← → / A D / кнопки снизу / веди пальцем по экрану</div>
@@ -32,13 +32,16 @@ $('best').textContent='РЕКОРД: '+best;
 const nests=[55,165,275,385];
 function rounded(x,y,w,h,r,fill,stroke){g.beginPath();g.roundRect(x,y,w,h,r);g.fillStyle=fill;g.fill();if(stroke){g.strokeStyle=stroke;g.lineWidth=3;g.stroke()}}
 function draw(){
- const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#f2b5e2');bg.addColorStop(1,'#ffe6f4');g.fillStyle=bg;g.fillRect(0,0,W,H);
+ const palettes=[['#f2b5e2','#ffe6f4'],['#ef9e9e','#f8d2b0'],['#8c9bd5','#d7c7ed'],['#27365f','#6a568d']];
+ const phase=Math.min(score/20,palettes.length-1),idx=Math.min(Math.floor(phase),palettes.length-2),t=phase-idx;
+ const mix=(a,b,t)=>{const A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16),r=Math.round(((A>>16)&255)+(((B>>16)&255)-((A>>16)&255))*t),gg=Math.round(((A>>8)&255)+(((B>>8)&255)-((A>>8)&255))*t),bb=Math.round((A&255)+((B&255)-(A&255))*t);return `rgb(${r},${gg},${bb})`};
+ const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,mix(palettes[idx][0],palettes[idx+1][0],t));bg.addColorStop(1,mix(palettes[idx][1],palettes[idx+1][1],t));g.fillStyle=bg;g.fillRect(0,0,W,H);
  // soft decorative room
  g.fillStyle='#ffffff35';for(let i=0;i<8;i++){g.beginPath();g.arc((i*73+25)%W,100+(i%3)*105,25+(i%2)*9,0,7);g.fill()}
  // nests and hanging branches
  nests.forEach((x,i)=>{g.strokeStyle='#8e5a49';g.lineWidth=8;g.beginPath();g.moveTo(x,0);g.lineTo(x,54);g.stroke();g.fillStyle='#7d4a42';g.beginPath();g.ellipse(x,61,29,12,0,0,7);g.fill();g.fillStyle='#b67a58';g.beginPath();g.ellipse(x,57,24,8,0,0,7);g.fill()});
  // eggs
- eggs.forEach(e=>{g.save();g.translate(e.x,e.y);g.rotate(Math.sin(e.y*.03)*.08);g.fillStyle='#fffdf4';g.strokeStyle='#d7a9b8';g.lineWidth=2;g.beginPath();g.ellipse(0,0,12,16,0,0,7);g.fill();g.stroke();g.fillStyle='#f5c9df';g.beginPath();g.ellipse(-3,-5,3,4,0,0,7);g.fill();g.restore()});
+ eggs.forEach(e=>{g.save();g.translate(e.x,e.y);g.rotate(Math.sin(e.y*.03)*.08);if(e.type==='poop'){g.fillStyle='#6b3d25';g.strokeStyle='#3c241a';g.lineWidth=2;g.beginPath();g.moveTo(-13,10);g.bezierCurveTo(-23,2,-13,-8,-6,-6);g.bezierCurveTo(-13,-20,8,-20,7,-7);g.bezierCurveTo(20,-5,19,8,12,11);g.closePath();g.fill();g.stroke();g.fillStyle='#f3d3a2';g.beginPath();g.arc(-4,1,2,0,7);g.arc(5,1,2,0,7);g.fill()}else{g.fillStyle='#fffdf4';g.strokeStyle='#d7a9b8';g.lineWidth=2;g.beginPath();g.ellipse(0,0,12,16,0,0,7);g.fill();g.stroke();g.fillStyle='#f5c9df';g.beginPath();g.ellipse(-3,-5,3,4,0,0,7);g.fill()}g.restore()});
  // floor
  g.fillStyle='#d78abf';g.fillRect(0,570,W,80);g.fillStyle='#f7c5e7';for(let x=0;x<W;x+=44)g.fillRect(x,582,23,7);
  // player cutout sized down, with basket in front
@@ -51,15 +54,15 @@ function draw(){
  g.fillStyle='#f3d19a';for(let x=playerX-30;x<playerX+35;x+=15)g.fillRect(x,545,5,23);
 }
 function hud(){$('score').textContent='🥚 '+score;$('miss').textContent='❌ '+missed+' / 5'}
-function spawn(){const lane=Math.floor(Math.random()*4);eggs.push({x:nests[lane]+(Math.random()*12-6),y:76,v:2.2+Math.min(score*.045,3.4),lane})}
+function spawn(){const lane=Math.floor(Math.random()*4),type=Math.random()<.2?'poop':'egg';eggs.push({type,x:nests[lane]+(Math.random()*12-6),y:76,v:2.2+Math.min(score*.045,3.4)+(type==='poop'?.25:0),lane})}
 function reset(){score=0;missed=0;playerX=220;eggs=[];tick=0;move=0;spawn();hud()}
-function start(){reset();state='playing';$('overlay').style.display='none';last=performance.now();requestAnimationFrame(loop)}
-function finish(){submitBabloohScore('eggs', score);state='over';if(score>best){best=score;localStorage.setItem('babloohEggBest',best);$('best').textContent='РЕКОРД: '+best}$('title').textContent='Игра окончена!';$('desc').textContent='Ты поймал '+score+' яиц. Попробуешь улучшить результат?';$('start').textContent='Ещё раз';$('overlay').style.display='flex'}
+function start(){reset();state='playing';$('overlay').querySelector('.loss-image').style.display='none';$('overlay').style.display='none';last=performance.now();requestAnimationFrame(loop)}
+function finish(){if(state==='over')return;submitBabloohScore('eggs', score);state='over';if(score>best){best=score;localStorage.setItem('babloohEggBest',best);$('best').textContent='РЕКОРД: '+best}$('title').textContent='Игра окончена!';$('desc').textContent='Ты поймал '+score+' яиц. Попробуешь улучшить результат?';$('start').textContent='Ещё раз';$('overlay').querySelector('.loss-image').style.display='block';$('overlay').style.display='flex'}
 function loop(t){if(state!=='playing')return;const dt=Math.min((t-last)/16.67,2);last=t;tick+=dt;
  playerX+=move*5.2*dt;playerX=Math.max(53,Math.min(W-53,playerX));
  if(tick>Math.max(28,76-score*1.3)){spawn();tick=0}
  eggs.forEach(e=>e.y+=e.v*dt);
- eggs=eggs.filter(e=>{if(e.y>532&&e.y<570&&Math.abs(e.x-playerX)<51){score++;hud();return false}if(e.y>575){missed++;hud();if(missed>=5)finish();return false}return true});
+ eggs=eggs.filter(e=>{if(e.y>532&&e.y<570&&Math.abs(e.x-playerX)<51){if(e.type==='poop'){finish();return false}score++;hud();return false}if(e.y>575){if(e.type!=='poop'){missed++;hud();if(missed>=5)finish()}return false}return true});
  draw();if(state==='playing')requestAnimationFrame(loop)}
 function setMove(v){move=v}
 $('start').addEventListener('click',start);
@@ -83,7 +86,10 @@ async function submitBabloohScore(gameId, score) {
       headers: { 'Content-Type': 'application/json', 'apikey': BABLOOH_SUPABASE_KEY },
       body: JSON.stringify({ initData, gameId, score: Math.max(0, Math.floor(score)) })
     });
-    if (!response.ok) console.error('BABLOOH score submit failed:', await response.text());
-  } catch (error) { console.error('BABLOOH score submit error:', error); }
+    const responseText = await response.text();
+    if (!response.ok) { console.error('BABLOOH score submit failed:', gameId, response.status, responseText); return false; }
+    console.info('BABLOOH score accepted:', gameId, Math.max(0, Math.floor(score)), responseText);
+    return true;
+  } catch (error) { console.error('BABLOOH score submit error:', gameId, error); return false; }
 }
 </script></body></html>

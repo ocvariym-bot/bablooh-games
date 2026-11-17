@@ -14,11 +14,11 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:420/700;touch-action:ma
 .panel h2{margin:0 0 8px;font-size:25px}.panel p{margin:5px 0 16px;font-size:14px;line-height:1.45}
 button{border:0;border-radius:999px;background:linear-gradient(135deg,#ff54b8,#b74be8);color:white;font-size:16px;font-weight:850;padding:13px 27px;box-shadow:0 5px 0 #923a9d;cursor:pointer}button:active{transform:translateY(3px);box-shadow:0 2px 0 #923a9d}
 .help{font-size:12px;opacity:.75;margin-top:12px}
-</style></head><body><main class="shell">
+.loss-image{display:none;width:104px;height:118px;object-fit:contain;float:left;margin:0 12px 8px 0;filter:drop-shadow(0 5px 10px #0003)} .panel:after{content:"";display:block;clear:both}</style></head><body><main class="shell">
 <div class="brand">FLAPPY BABLOOH</div><div class="sub">ПРОЛЕТИ МЕЖДУ РОЗОВЫМИ ПРЕПЯТСТВИЯМИ</div>
 <div class="frame"><canvas id="game" width="420" height="700" aria-label="Игра Flappy Bablooh"></canvas>
 <div class="hud"><span id="score">0</span><span id="best">РЕКОРД: 0</span></div>
-<div class="overlay" id="overlay"><div class="panel"><h2 id="headline">Готов?</h2><p id="message">Помоги герою пролететь как можно дальше. Нажимай, чтобы подпрыгнуть!</p><button id="start">Играть</button></div></div>
+<div class="overlay" id="overlay"><div class="panel"><img class="loss-image" src="game-over.png" alt="Баблух проиграл"><h2 id="headline">Готов?</h2><p id="message">Помоги герою пролететь как можно дальше. Нажимай, чтобы подпрыгнуть!</p><button id="start">Играть</button></div></div>
 </div><div class="help">Управление: ПРОБЕЛ / ↑ / клик / касание экрана</div>
 </main>
 <script>
@@ -32,9 +32,13 @@ bestEl.textContent='РЕКОРД: '+best;
 const W=420,H=700,ground=640;
 function cloud(x,y,s){ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.fillStyle='#fff4ff88';ctx.beginPath();ctx.arc(-25,4,22,0,7);ctx.arc(0,-8,29,0,7);ctx.arc(26,4,22,0,7);ctx.fill();ctx.restore()}
 function background(){
+ const night=Math.max(0,Math.min(1,(score-10)/4));
  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#d68bd4');g.addColorStop(.65,'#f4b5df');g.addColorStop(1,'#ffe0ef');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
- for(let i=0;i<7;i++){let x=((i*91-frame*.35)%(W+130)+W+130)%(W+130)-50;cloud(x,95+(i%3)*112,.8+(i%2)*.35)}
- ctx.fillStyle='#ffffff35';for(let i=0;i<20;i++){let x=(i*67+frame*.6)%W,y=(i*113)%600;ctx.beginPath();ctx.arc(x,y,2+(i%3),0,7);ctx.fill()}
+ if(night>0){const ng=ctx.createLinearGradient(0,0,0,H);ng.addColorStop(0,'rgba(13,20,58,'+(night*.96)+')');ng.addColorStop(.65,'rgba(31,36,88,'+(night*.88)+')');ng.addColorStop(1,'rgba(70,39,104,'+(night*.72)+')');ctx.fillStyle=ng;ctx.fillRect(0,0,W,H)}
+ for(let i=0;i<7;i++){let x=((i*91-frame*.35)%(W+130)+W+130)%(W+130)-50;ctx.globalAlpha=1-night*.82;cloud(x,95+(i%3)*112,.8+(i%2)*.35)}
+ ctx.globalAlpha=1;
+ ctx.fillStyle='#ffffff'+(night>.1?'cc':'35');for(let i=0;i<20;i++){let x=(i*67+frame*.6)%W,y=(i*113)%600;ctx.beginPath();ctx.arc(x,y,2+(i%3),0,7);ctx.fill()}
+ if(night>0){ctx.globalAlpha=night;for(let i=0;i<46;i++){let x=(i*83+19)%W,y=(i*137+31)%ground;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,y,1+(i%3)*.45,0,7);ctx.fill()}ctx.globalAlpha=1}
 }
 function pipe(p){
  const grad=ctx.createLinearGradient(p.x,0,p.x+64,0);grad.addColorStop(0,'#9b3caa');grad.addColorStop(.35,'#e46bc8');grad.addColorStop(1,'#9d3cae');
@@ -56,8 +60,8 @@ function render(){background();pipes.forEach(pipe);drawGround();drawPlayer()}
 function addPipe(){let top=135+Math.random()*235,gap=190;pipes.push({x:W+10,top,bottom:top+gap,passed:false})}
 function reset(){score=0;frame=0;player={x:92,y:315,vy:0,rot:0};pipes=[];addPipe();addPipe();pipes[1].x=650;scoreEl.textContent='0'}
 function flap(){if(state==='ready'){begin();return}if(state==='playing')player.vy=-6.8}
-function begin(){reset();state='playing';overlay.style.display='none';player.vy=-6.8;last=performance.now();requestAnimationFrame(loop)}
-function end(){submitBabloohScore('flappy', score);state='over';best=Math.max(best,score);localStorage.setItem('babloohBest',best);bestEl.textContent='РЕКОРД: '+best;document.getElementById('headline').textContent='Игра окончена!';document.getElementById('message').textContent='Твой результат: '+score+'. Попробуешь побить рекорд?';startBtn.textContent='Ещё раз';overlay.style.display='flex'}
+function begin(){reset();state='playing';overlay.querySelector('.loss-image').style.display='none';overlay.style.display='none';player.vy=-6.8;last=performance.now();requestAnimationFrame(loop)}
+function end(){if(state==='over')return;submitBabloohScore('flappy', score);state='over';best=Math.max(best,score);localStorage.setItem('babloohBest',best);bestEl.textContent='РЕКОРД: '+best;document.getElementById('headline').textContent='Игра окончена!';document.getElementById('message').textContent='Твой результат: '+score+'. Попробуешь побить рекорд?';startBtn.textContent='Ещё раз';overlay.querySelector('.loss-image').style.display='block';overlay.style.display='flex'}
 function loop(t){if(state!=='playing')return;let dt=Math.min((t-last)/16.67,2);last=t;frame+=dt;player.vy+=.36*dt;player.y+=player.vy*dt;
  pipes.forEach(p=>{p.x-=2.65*dt;if(!p.passed&&p.x+64<player.x){p.passed=true;score++;scoreEl.textContent=score}});
  if(pipes[pipes.length-1].x<225)addPipe();pipes=pipes.filter(p=>p.x>-90);
@@ -82,7 +86,10 @@ async function submitBabloohScore(gameId, score) {
       headers: { 'Content-Type': 'application/json', 'apikey': BABLOOH_SUPABASE_KEY },
       body: JSON.stringify({ initData, gameId, score: Math.max(0, Math.floor(score)) })
     });
-    if (!response.ok) console.error('BABLOOH score submit failed:', await response.text());
-  } catch (error) { console.error('BABLOOH score submit error:', error); }
+    const responseText = await response.text();
+    if (!response.ok) { console.error('BABLOOH score submit failed:', gameId, response.status, responseText); return false; }
+    console.info('BABLOOH score accepted:', gameId, Math.max(0, Math.floor(score)), responseText);
+    return true;
+  } catch (error) { console.error('BABLOOH score submit error:', gameId, error); return false; }
 }
 </script></body></html>
