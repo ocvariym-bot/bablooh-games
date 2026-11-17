@@ -1,5 +1,6 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<html lang="ru"><head>
+<script src="https://telegram.org/js/telegram-web-app.js"></script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Flappy Bablooh</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#24132d;color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
@@ -56,7 +57,7 @@ function addPipe(){let top=135+Math.random()*235,gap=190;pipes.push({x:W+10,top,
 function reset(){score=0;frame=0;player={x:92,y:315,vy:0,rot:0};pipes=[];addPipe();addPipe();pipes[1].x=650;scoreEl.textContent='0'}
 function flap(){if(state==='ready'){begin();return}if(state==='playing')player.vy=-6.8}
 function begin(){reset();state='playing';overlay.style.display='none';player.vy=-6.8;last=performance.now();requestAnimationFrame(loop)}
-function end(){state='over';best=Math.max(best,score);localStorage.setItem('babloohBest',best);bestEl.textContent='РЕКОРД: '+best;document.getElementById('headline').textContent='Игра окончена!';document.getElementById('message').textContent='Твой результат: '+score+'. Попробуешь побить рекорд?';startBtn.textContent='Ещё раз';overlay.style.display='flex'}
+function end(){submitBabloohScore('flappy', score);state='over';best=Math.max(best,score);localStorage.setItem('babloohBest',best);bestEl.textContent='РЕКОРД: '+best;document.getElementById('headline').textContent='Игра окончена!';document.getElementById('message').textContent='Твой результат: '+score+'. Попробуешь побить рекорд?';startBtn.textContent='Ещё раз';overlay.style.display='flex'}
 function loop(t){if(state!=='playing')return;let dt=Math.min((t-last)/16.67,2);last=t;frame+=dt;player.vy+=.36*dt;player.y+=player.vy*dt;
  pipes.forEach(p=>{p.x-=2.65*dt;if(!p.passed&&p.x+64<player.x){p.passed=true;score++;scoreEl.textContent=score}});
  if(pipes[pipes.length-1].x<225)addPipe();pipes=pipes.filter(p=>p.x>-90);
@@ -68,4 +69,20 @@ startBtn.addEventListener('click',begin);
 canvas.addEventListener('pointerdown',e=>{e.preventDefault();if(state==='ready')begin();else flap()});
 window.addEventListener('keydown',e=>{if(['Space','ArrowUp','KeyW'].includes(e.code)){e.preventDefault();if(state==='over')begin();else flap()}});
 sprite.onload=()=>{render()};render();
+
+// BABLOOH GAMES: отправка рекордов в глобальный рейтинг
+const BABLOOH_SUPABASE_URL = 'https://pxjuqmjtlbfhfsullwdu.supabase.co';
+const BABLOOH_SUPABASE_KEY = 'sb_publishable_rlLNGhYLo8CRwXpaHh5kEw_ozuW1_D0';
+async function submitBabloohScore(gameId, score) {
+  try {
+    const initData = window.Telegram?.WebApp?.initData || '';
+    if (!initData) { console.warn('Telegram initData отсутствует: результат не отправлен'); return; }
+    const response = await fetch(`${BABLOOH_SUPABASE_URL}/functions/v1/submit-score`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': BABLOOH_SUPABASE_KEY },
+      body: JSON.stringify({ initData, gameId, score: Math.max(0, Math.floor(score)) })
+    });
+    if (!response.ok) console.error('BABLOOH score submit failed:', await response.text());
+  } catch (error) { console.error('BABLOOH score submit error:', error); }
+}
 </script></body></html>

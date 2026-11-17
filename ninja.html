@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#24142d">
+<title>BABLOOH Ninja</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#24142d;color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+body{min-height:100vh;display:grid;place-items:center;padding:12px;background:radial-gradient(circle at top,#75427b,#24142d 72%);overflow:hidden}
+main{width:min(100%,480px);text-align:center}
+.logo{font-size:clamp(27px,7vw,38px);font-weight:1000;letter-spacing:1px;color:#ffe0f6;text-shadow:0 3px 15px #ff54c8;margin:0}
+.tag{font-size:12px;opacity:.82;margin:3px 0 12px}
+.game{position:relative;border:3px solid #f8b8e7;border-radius:22px;overflow:hidden;box-shadow:0 18px 55px #0008;background:#2b1735}
+canvas{width:100%;height:auto;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+.hud{position:absolute;z-index:2;top:10px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px;font-weight:950;font-size:14px;text-shadow:0 2px 6px #30102f;pointer-events:none}
+.hud span{background:#2b173599;border:1px solid #ffffff30;border-radius:12px;padding:6px 9px;white-space:nowrap}
+.overlay{position:absolute;z-index:3;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:#21102799;backdrop-filter:blur(4px)}
+.panel{width:min(100%,320px);background:#fff0f9ee;color:#54244e;border:2px solid #fff;border-radius:22px;padding:22px;box-shadow:0 10px 35px #4d1b4c66}
+.panel h2{margin:0 0 8px;font-size:26px}.panel p{font-size:14px;line-height:1.45;margin:5px 0 16px}
+button{border:0;border-radius:999px;background:linear-gradient(135deg,#ff55b9,#a94de0);color:white;font-size:16px;font-weight:900;padding:13px 27px;box-shadow:0 5px 0 #82368f;cursor:pointer}
+.hint{font-size:12px;opacity:.75;margin-top:10px}
+</style>
+</head>
+<body>
+<main>
+<h1 class="logo">BABLOOH NINJA</h1>
+<div class="tag">РЕЖЬ БАБЛУХОВ, НО НЕ ТРОГАЙ БОМБЫ ⚔️</div>
+<div class="game">
+<canvas id="c" width="440" height="700"></canvas>
+<div class="hud"><span id="score">⚔️ 0</span><span id="miss">❌ 0 / 3</span><span id="best">РЕКОРД: 0</span></div>
+<div class="overlay" id="overlay"><div class="panel">
+<h2 id="title">Готов резать?</h2>
+<p id="desc">Проводи пальцем или мышью по головам, чтобы разрезать их и получать очки. Не пропусти три головы и не задень бомбу!</p>
+<button id="start">Играть</button>
+</div></div>
+</div>
+<div class="hint">Веди пальцем или мышью по экрану. Голова = +1 очко. 3 пропуска — конец игры!</div>
+</main>
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+const W=440,H=700,$=id=>document.getElementById(id);
+const headImg=new Image();headImg.src='bablooh-head.png';
+let state='ready',score=0,missed=0,best=+(localStorage.getItem('babloohNinjaBest')||0);
+let objects=[],halves=[],particles=[],trail=[],last=0,spawnClock=0,pointerDown=false,prevPointer=null,shake=0;
+$('best').textContent='РЕКОРД: '+best;
+function rand(a,b){return a+Math.random()*(b-a)}
+function hud(){$('score').textContent='⚔️ '+score;$('miss').textContent='❌ '+missed+' / 3'}
+function spawn(){
+ const bomb=Math.random()<.19;
+ const x=rand(65,W-65),size=bomb?rand(34,43):rand(49,65);
+ objects.push({type:bomb?'bomb':'head',x,y:H+size,vx:rand(-2.1,2.1),vy:rand(-13.2,-10.4),r:size*.48,size,rot:rand(-.35,.35),vr:rand(-.035,.035),hit:false});
+}
+function reset(){score=0;missed=0;objects=[];halves=[];particles=[];trail=[];spawnClock=0;shake=0;hud();spawn();spawnClock=0}
+function start(){reset();state='playing';$('overlay').style.display='none';last=performance.now();requestAnimationFrame(loop)}
+function finish(reason){submitBabloohScore('ninja', score);
+ if(state!=='playing')return;state='over';
+ if(score>best){best=score;localStorage.setItem('babloohNinjaBest',best);$('best').textContent='РЕКОРД: '+best}
+ $('title').textContent=reason||'Игра окончена!';
+ $('desc').textContent='Твой результат: '+score+'. Рекорд: '+best+'. Попробуешь ещё раз?';
+ $('start').textContent='Ещё раз';$('overlay').style.display='flex';
+}
+function burst(x,y,color,n=12){
+ for(let i=0;i<n;i++){let a=rand(0,Math.PI*2),s=rand(1.5,5);particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rand(18,34),max:34,size:rand(2,5),color})}
+}
+function splitHead(o,dx,dy){
+ o.hit=true;score++;hud();burst(o.x,o.y,'#ff8bcf',17);burst(o.x,o.y,'#fff0a8',8);
+ const angle=Math.atan2(dy,dx);
+ halves.push({x:o.x,y:o.y,size:o.size,rot:o.rot,angle,side:-1,vx:o.vx-2.2,vy:o.vy-1.1,vr:-.095,life:52});
+ halves.push({x:o.x,y:o.y,size:o.size,rot:o.rot,angle,side:1,vx:o.vx+2.2,vy:o.vy-1.1,vr:.095,life:52});
+}
+function pointSegmentDistance(px,py,x1,y1,x2,y2){
+ const dx=x2-x1,dy=y2-y1,l=dx*dx+dy*dy;
+ if(!l)return Math.hypot(px-x1,py-y1);
+ const t=Math.max(0,Math.min(1,((px-x1)*dx+(py-y1)*dy)/l));
+ return Math.hypot(px-(x1+t*dx),py-(y1+t*dy));
+}
+function slice(x1,y1,x2,y2){
+ if(Math.hypot(x2-x1,y2-y1)<5)return;
+ for(const o of objects){
+  if(o.hit)continue;
+  if(pointSegmentDistance(o.x,o.y,x1,y1,x2,y2)<o.r+9){
+   if(o.type==='bomb'){o.hit=true;burst(o.x,o.y,'#ffb347',30);shake=18;finish('БА-БАХ! Ты задел бомбу 💣');return}
+   splitHead(o,x2-x1,y2-y1);
+  }
+ }
+}
+function coords(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*W,y:(e.clientY-r.top)/r.height*H}}
+canvas.addEventListener('pointerdown',e=>{e.preventDefault();if(state!=='playing')return;pointerDown=true;prevPointer=coords(e);trail.push({...prevPointer,life:12});try{canvas.setPointerCapture(e.pointerId)}catch(_){}});
+canvas.addEventListener('pointermove',e=>{if(!pointerDown||state!=='playing')return;e.preventDefault();const p=coords(e);if(prevPointer){slice(prevPointer.x,prevPointer.y,p.x,p.y)}trail.push({...p,life:12});prevPointer=p});
+function release(){pointerDown=false;prevPointer=null}
+canvas.addEventListener('pointerup',release);canvas.addEventListener('pointercancel',release);canvas.addEventListener('lostpointercapture',release);
+function drawBackground(){
+ const bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#44204e');bg.addColorStop(.55,'#2b1738');bg.addColorStop(1,'#1e142d');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+ for(let i=0;i<32;i++){const x=(i*137+29)%W,y=(i*191+17)%H;ctx.fillStyle='#ffffff35';ctx.beginPath();ctx.arc(x,y,1.5+(i%3),0,Math.PI*2);ctx.fill()}
+ ctx.fillStyle='#ff8bd422';ctx.fillRect(0,H-8,W,8);
+}
+function drawBomb(o){
+ ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.rot);
+ ctx.strokeStyle='#ffbf68';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(0,-o.r+3);ctx.quadraticCurveTo(13,-o.r-19,23,-o.r-15);ctx.stroke();
+ ctx.fillStyle='#ffd66b';ctx.beginPath();ctx.arc(25,-o.r-15,4,0,7);ctx.fill();
+ for(let i=0;i<10;i++){let a=i*Math.PI/5;ctx.fillStyle='#20202c';ctx.beginPath();ctx.moveTo(Math.cos(a)*(o.r-2),Math.sin(a)*(o.r-2));ctx.lineTo(Math.cos(a)*(o.r+12),Math.sin(a)*(o.r+12));ctx.lineTo(Math.cos(a+0.35)*(o.r-2),Math.sin(a+0.35)*(o.r-2));ctx.fill()}
+ const grad=ctx.createRadialGradient(-10,-12,2,0,0,o.r+4);grad.addColorStop(0,'#777987');grad.addColorStop(.5,'#343747');grad.addColorStop(1,'#11131d');
+ ctx.fillStyle=grad;ctx.beginPath();ctx.arc(0,0,o.r,0,7);ctx.fill();ctx.strokeStyle='#9295a5';ctx.lineWidth=2;ctx.stroke();
+ ctx.fillStyle='#fff';ctx.font='bold 25px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('!',0,1);ctx.restore();
+}
+function drawHead(o){
+ ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.rot);
+ if(headImg.complete&&headImg.naturalWidth){ctx.drawImage(headImg,-o.size/2,-o.size/2,o.size,o.size)}
+ else{ctx.fillStyle='#d99a82';ctx.beginPath();ctx.arc(0,0,o.r,0,7);ctx.fill()}
+ ctx.restore();
+}
+function drawHalf(h){
+ ctx.save();ctx.translate(h.x,h.y);ctx.rotate(h.rot);
+ const s=h.size;ctx.beginPath();
+ if(h.side<0){ctx.rect(-s/2,-s/2,s/2,s)}else{ctx.rect(0,-s/2,s/2,s)}
+ ctx.clip();if(headImg.complete&&headImg.naturalWidth)ctx.drawImage(headImg,-s/2,-s/2,s,s);
+ ctx.restore();
+}
+function draw(){
+ ctx.save();if(shake>0){ctx.translate(rand(-shake,shake),rand(-shake,shake));shake*=.82}
+ drawBackground();
+ objects.forEach(o=>o.type==='bomb'?drawBomb(o):drawHead(o));
+ halves.forEach(drawHalf);
+ particles.forEach(p=>{ctx.globalAlpha=Math.max(0,p.life/p.max);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,7);ctx.fill()});ctx.globalAlpha=1;
+ if(trail.length>1){ctx.lineCap='round';ctx.lineJoin='round';for(let i=1;i<trail.length;i++){ctx.strokeStyle='rgba(255,245,255,'+(i/trail.length*.9)+')';ctx.lineWidth=2+i/trail.length*8;ctx.beginPath();ctx.moveTo(trail[i-1].x,trail[i-1].y);ctx.lineTo(trail[i].x,trail[i].y);ctx.stroke()}}
+ ctx.restore();
+}
+function loop(t){
+ if(state!=='playing')return;const dt=Math.min((t-last)/16.67,2);last=t;
+ spawnClock+=dt;if(spawnClock>Math.max(27,58-score*.32)){spawn();if(Math.random()<Math.min(.34,.08+score*.006))spawn();spawnClock=0}
+ objects.forEach(o=>{o.x+=o.vx*dt;o.y+=o.vy*dt;o.vy+=.27*dt;o.rot+=o.vr*dt});
+ objects=objects.filter(o=>{
+  if(o.hit)return false;
+  if(o.y>H+o.size){if(o.type==='head'){missed++;hud();if(missed>=3)finish('Три головы пропущены!')}return false}
+  return true;
+ });
+ halves.forEach(h=>{h.x+=h.vx*dt;h.y+=h.vy*dt;h.vy+=.28*dt;h.rot+=h.vr*dt;h.life-=dt});
+ halves=halves.filter(h=>h.life>0);
+ particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=.12*dt;p.life-=dt});
+ particles=particles.filter(p=>p.life>0);
+ trail.forEach(p=>p.life-=dt);trail=trail.filter(p=>p.life>0);
+ if(shake<.5)shake=0;
+ draw();if(state==='playing')requestAnimationFrame(loop);
+}
+$('start').addEventListener('click',start);
+draw();
+
+// BABLOOH GAMES: отправка рекордов в глобальный рейтинг
+const BABLOOH_SUPABASE_URL = 'https://pxjuqmjtlbfhfsullwdu.supabase.co';
+const BABLOOH_SUPABASE_KEY = 'sb_publishable_rlLNGhYLo8CRwXpaHh5kEw_ozuW1_D0';
+async function submitBabloohScore(gameId, score) {
+  try {
+    const initData = window.Telegram?.WebApp?.initData || '';
+    if (!initData) { console.warn('Telegram initData отсутствует: результат не отправлен'); return; }
+    const response = await fetch(`${BABLOOH_SUPABASE_URL}/functions/v1/submit-score`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': BABLOOH_SUPABASE_KEY },
+      body: JSON.stringify({ initData, gameId, score: Math.max(0, Math.floor(score)) })
+    });
+    if (!response.ok) console.error('BABLOOH score submit failed:', await response.text());
+  } catch (error) { console.error('BABLOOH score submit error:', error); }
+}
+</script>
+</body></html>

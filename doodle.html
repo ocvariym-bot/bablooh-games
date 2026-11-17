@@ -1,5 +1,6 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<html lang="ru"><head>
+<script src="https://telegram.org/js/telegram-web-app.js"></script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Doodle Bablooh</title>
 <style>
 *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:14px;background:radial-gradient(circle at top,#75427b,#24142d 72%);font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#fff}
@@ -56,7 +57,7 @@ function addPlatforms(){
  plats=plats.filter(p=>p.y<camera+H+80);
 }
 function start(){reset();state='playing';$('overlay').style.display='none';last=performance.now();requestAnimationFrame(loop)}
-function finish(){state='over';if(score>best){best=score;localStorage.setItem('doodleBabloohBest',best);$('best').textContent='РЕКОРД: '+best+' м'}$('title').textContent='Баблух упал!';$('desc').textContent='Твоя высота: '+score+' м. Попробуешь запрыгнуть ещё выше?';$('start').textContent='Ещё раз';$('overlay').style.display='flex'}
+function finish(){submitBabloohScore('doodle', score);state='over';if(score>best){best=score;localStorage.setItem('doodleBabloohBest',best);$('best').textContent='РЕКОРД: '+best+' м'}$('title').textContent='Баблух упал!';$('desc').textContent='Твоя высота: '+score+' м. Попробуешь запрыгнуть ещё выше?';$('start').textContent='Ещё раз';$('overlay').style.display='flex'}
 function loop(t){
  if(state!=='playing')return;let dt=Math.min((t-last)/16.67,2);last=t;
  const prevBottom=player.y+player.h;
@@ -83,4 +84,20 @@ window.addEventListener('keyup',e=>{if(['ArrowLeft','ArrowRight','KeyA','KeyD'].
 c.addEventListener('pointerdown',e=>{if(state!=='playing')return;const r=c.getBoundingClientRect();player.x=(e.clientX-r.left)/r.width*W-player.w/2});
 c.addEventListener('pointermove',e=>{if(state!=='playing'||e.buttons===0)return;const r=c.getBoundingClientRect();player.x=(e.clientX-r.left)/r.width*W-player.w/2});
 draw();
+
+// BABLOOH GAMES: отправка рекордов в глобальный рейтинг
+const BABLOOH_SUPABASE_URL = 'https://pxjuqmjtlbfhfsullwdu.supabase.co';
+const BABLOOH_SUPABASE_KEY = 'sb_publishable_rlLNGhYLo8CRwXpaHh5kEw_ozuW1_D0';
+async function submitBabloohScore(gameId, score) {
+  try {
+    const initData = window.Telegram?.WebApp?.initData || '';
+    if (!initData) { console.warn('Telegram initData отсутствует: результат не отправлен'); return; }
+    const response = await fetch(`${BABLOOH_SUPABASE_URL}/functions/v1/submit-score`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': BABLOOH_SUPABASE_KEY },
+      body: JSON.stringify({ initData, gameId, score: Math.max(0, Math.floor(score)) })
+    });
+    if (!response.ok) console.error('BABLOOH score submit failed:', await response.text());
+  } catch (error) { console.error('BABLOOH score submit error:', error); }
+}
 </script></body></html>
