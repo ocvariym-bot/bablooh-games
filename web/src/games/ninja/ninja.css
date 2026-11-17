@@ -3,21 +3,26 @@
   margin: 0 auto;
   text-align: center;
   padding: 8px 0 16px;
+  font-family: 'Nunito', 'Segoe UI', sans-serif;
 }
 
 .ninja-logo {
   margin: 0;
+  font-family: 'Fredoka', 'Nunito', sans-serif;
   font-size: clamp(27px, 7vw, 38px);
-  font-weight: 1000;
-  letter-spacing: 1px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
   color: #ffe0f6;
   text-shadow: 0 3px 15px #ff54c8;
 }
 
 .ninja-tag {
+  font-family: 'Fredoka', 'Nunito', sans-serif;
+  font-weight: 500;
   font-size: 12px;
   margin: 3px 0 12px;
   color: #f5d8ef;
+  letter-spacing: 0.3px;
 }
 
 .ninja-frame {
@@ -68,9 +73,11 @@
   width: 72px;
   height: 72px;
   object-fit: contain;
-  border-radius: 50%;
+  border-radius: 16px;
   background: #1a0f20;
   box-shadow: 0 4px 12px #0003;
+  padding: 4px;
+  box-sizing: border-box;
 }
 
 .ninja-bonus-ring {
@@ -79,7 +86,7 @@
   border: 3px solid #ffe36b;
   border-radius: 50%;
   color: #ffe36b;
-  font: 900 12px/1 system-ui, sans-serif;
+  font: 800 12px/1 'Nunito', sans-serif;
   display: grid;
   place-items: start center;
   padding-top: 0;
@@ -88,6 +95,44 @@
 
 .ninja-bonus-ring::after {
   content: none;
+}
+
+.ninja-frenzy-ring {
+  position: absolute;
+  inset: -10%;
+  border: 3px solid #ffe36b;
+  border-radius: 50%;
+  color: #ffe36b;
+  font: 800 13px/1 'Nunito', sans-serif;
+  display: grid;
+  place-items: start center;
+  padding-top: 2px;
+  pointer-events: none;
+  text-shadow: 0 2px 6px #0008;
+  box-shadow: 0 0 0 4px #ffe36b33, 0 0 22px #ffe36b66;
+  animation: ninja-frenzy-pulse 0.9s ease-in-out infinite;
+}
+
+.ninja-sprite--frenzy-active .ninja-frenzy-ring {
+  border-color: #fff36b;
+  color: #fff8c8;
+  animation-duration: 0.45s;
+}
+
+.ninja-sprite--frenzy {
+  filter: drop-shadow(0 0 12px #ffe36b88);
+}
+
+@keyframes ninja-frenzy-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.85;
+  }
 }
 
 .ninja-hud {
@@ -111,6 +156,13 @@
   border-radius: 12px;
   padding: 6px 9px;
   white-space: nowrap;
+}
+
+.ninja-hud-frenzy {
+  background: #ffe36b33 !important;
+  border-color: #ffe36b99 !important;
+  color: #ffe9a0;
+  animation: ninja-frenzy-pulse 0.5s ease-in-out infinite;
 }
 
 .ninja-overlay {
@@ -137,7 +189,9 @@
 
 .ninja-panel h2 {
   margin: 0 0 8px;
+  font-family: 'Fredoka', 'Nunito', sans-serif;
   font-size: 26px;
+  font-weight: 700;
 }
 
 .ninja-panel p {
@@ -155,20 +209,15 @@
 }
 
 .ninja-loss {
-  float: left;
-  width: 108px;
-  height: 108px;
-  object-fit: cover;
-  border-radius: 18px;
-  margin: 0 12px 8px 0;
-  filter: drop-shadow(0 5px 10px #0003);
-  background: #1a0f20;
-}
-
-.ninja-panel::after {
-  content: '';
   display: block;
-  clear: both;
+  width: 148px;
+  height: 148px;
+  object-fit: cover;
+  object-position: center 88%;
+  border-radius: 28px;
+  margin: 0 auto 12px;
+  filter: drop-shadow(0 8px 16px #0004);
+  background: #1a0f20;
 }
 
 .ninja-btn {

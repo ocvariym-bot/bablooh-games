@@ -5,8 +5,9 @@ import {
   type GameId,
   type LeaderRow,
 } from '../lib/leaderboard'
+import { hapticLight, hapticSelect } from '../lib/telegram'
 
-export type OpenGameId = GameId | 'ninja-react'
+export type OpenGameId = GameId | 'ninja-react' | 'snake-react'
 
 type Props = {
   onOpenGame: (id: OpenGameId, src?: string) => void
@@ -19,52 +20,62 @@ const GAMES: {
   file?: string
   icon: string
   iconClass?: string
-  react?: boolean
+  react?: 'ninja' | 'snake'
 }[] = [
   {
     id: 'flappy',
     title: 'FLAPPY BABLOOH',
     desc: 'Пролетай между препятствиями',
     file: '/games/flappy.html',
-    icon: '/characters/flappy-sprite.png',
+    icon: '/characters/flappy-sprite.webp',
     iconClass: 'game-icon-img--flappy',
   },
   {
     id: 'eggs',
-    title: 'БАБЛУХ ЛОВИТ ЯЙЦА',
+    title: 'EGGS BABLOOH',
     desc: 'Лови падающие яйца',
     file: '/games/eggs.html',
-    icon: '/characters/eggs.png',
+    icon: '/characters/eggs.webp',
   },
   {
     id: 'doodle',
     title: 'DOODLE BABLOOH',
-    desc: 'Прыгай всё выше и выше',
+    desc: 'Прыгай, пока не улетел в космос',
     file: '/games/doodle.html',
-    icon: '/characters/doodle.png',
+    icon: '/characters/doodle.webp',
     iconClass: 'game-icon-img--doodle',
   },
   {
     id: 'ninja',
     title: 'BABLOOH NINJA',
-    desc: 'Разрезай головы, избегай бомб!',
-    react: true,
-    icon: '/characters/ninja.png',
+    desc: 'Он мне говорит, что у меня пылесоса нет!',
+    react: 'ninja',
+    icon: '/characters/ninja.webp',
+  },
+  {
+    id: 'snake',
+    title: 'SNAKE BABLOOH',
+    desc: 'Ешь бутерброды и расти длиннее',
+    react: 'snake',
+    icon: '/characters/snake.webp',
+    iconClass: 'game-icon-img--snake',
   },
 ]
 
 const LABELS: Record<GameId, string> = {
   flappy: 'Flappy',
-  eggs: 'Яйца',
+  eggs: 'Eggs',
   doodle: 'Doodle',
   ninja: 'Ninja',
+  snake: 'Snake',
 }
 
 const NAMES: Record<GameId, string> = {
   flappy: 'Flappy Bablooh',
-  eggs: 'Баблух ловит яйца',
+  eggs: 'Eggs Bablooh',
   doodle: 'Doodle Bablooh',
   ninja: 'Bablooh Ninja',
+  snake: 'Snake Bablooh',
 }
 
 export function Home({ onOpenGame }: Props) {
@@ -109,7 +120,13 @@ export function Home({ onOpenGame }: Props) {
         {GAMES.map((g) => (
           <img
             key={g.icon}
-            className={`home-hero-head${g.id === 'doodle' ? ' home-hero-head--doodle' : ''}`}
+            className={`home-hero-head${
+              g.id === 'doodle'
+                ? ' home-hero-head--doodle'
+                : g.id === 'snake'
+                  ? ' home-hero-head--snake'
+                  : ''
+            }`}
             src={g.icon}
             alt=""
             draggable={false}
@@ -140,9 +157,12 @@ export function Home({ onOpenGame }: Props) {
             className="game"
             whileHover={{ scale: 1.02, x: 4 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() =>
-              g.react ? onOpenGame('ninja-react') : onOpenGame(g.id, g.file)
-            }
+            onClick={() => {
+              hapticLight()
+              if (g.react === 'ninja') onOpenGame('ninja-react')
+              else if (g.react === 'snake') onOpenGame('snake-react')
+              else onOpenGame(g.id, g.file)
+            }}
           >
             <span className="emoji">
               <img
@@ -172,7 +192,10 @@ export function Home({ onOpenGame }: Props) {
               key={id}
               type="button"
               className={tab === id ? 'active' : ''}
-              onClick={() => setTab(id)}
+              onClick={() => {
+                hapticSelect()
+                setTab(id)
+              }}
             >
               {LABELS[id]}
             </button>

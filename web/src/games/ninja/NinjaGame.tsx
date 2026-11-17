@@ -14,7 +14,7 @@ export function NinjaGame() {
     best: Number(localStorage.getItem('babloohNinjaBest') || 0),
     state: 'ready',
     title: 'Готов резать?',
-    desc: 'Проводи пальцем или мышью по головам, чтобы разрезать их и получать очки. Не пропусти три головы и не задень бомбу!',
+    desc: 'Проводи пальцем по пылесосам. Золотой турбо-пылесос можно рубить много раз подряд — каждый удар в счёт. Не пропусти три штуки и не задень бомбу!',
   })
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export function NinjaGame() {
         animate={{ opacity: 0.85 }}
         transition={{ delay: 0.15 }}
       >
-        РЕЖЬ БАБЛУХОВ, НО НЕ ТРОГАЙ БОМБЫ
+        РЕЖЬ ПЫЛЕСОСЫ, НО НЕ ТРОГАЙ БОМБЫ
       </motion.p>
 
       <div className="ninja-frame">
@@ -71,7 +71,11 @@ export function NinjaGame() {
         <div className="ninja-hud">
           <span>⚔️ {hud.score}</span>
           <span>❌ {hud.missed} / 3</span>
-          <span>РЕКОРД: {hud.best}</span>
+          {hud.frenzyLabel ? (
+            <span className="ninja-hud-frenzy">{hud.frenzyLabel}</span>
+          ) : (
+            <span>РЕКОРД: {hud.best}</span>
+          )}
         </div>
 
         <AnimatePresence>
@@ -93,7 +97,7 @@ export function NinjaGame() {
                 {hud.state === 'over' && (
                   <motion.img
                     className="ninja-loss"
-                    src="/characters/ninja-loss.png"
+                    src="/characters/ninja-loss.webp"
                     alt="Баблух проиграл"
                     width={108}
                     height={108}
@@ -129,7 +133,7 @@ export function NinjaGame() {
       </div>
 
       <p className="ninja-hint">
-        Веди пальцем или мышью по экрану. Голова = +1 очко. 3 пропуска — конец игры!
+        Пылесос = +1. Турбо (золотой) = руби много раз. 3 пропуска — конец!
       </p>
     </main>
   )
