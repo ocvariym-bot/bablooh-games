@@ -1,11 +1,22 @@
-import { motion } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useEffect, useRef, useState } from 'react'
 import {
   fetchLeaderboard,
   type GameId,
   type LeaderRow,
 } from '../lib/leaderboard'
 import { hapticLight, hapticSelect } from '../lib/telegram'
+
+const SNAKE_TIP_KEY = 'babloohSnakeTipHidden'
+const SOUND_TIP_KEY = 'babloohSoundTipHidden'
+
+function tipHidden(key: string) {
+  try {
+    return localStorage.getItem(key) === '1'
+  } catch {
+    return false
+  }
+}
 
 export type OpenGameId = GameId | 'ninja-react' | 'snake-react'
 
@@ -82,6 +93,10 @@ export function Home({ onOpenGame }: Props) {
   const [tab, setTab] = useState<GameId>('flappy')
   const [rows, setRows] = useState<LeaderRow[] | null>(null)
   const [status, setStatus] = useState('Загружаю рейтинг…')
+  const [snakeTipOpen, setSnakeTipOpen] = useState(false)
+  const [snakeDontShowAgain, setSnakeDontShowAgain] = useState(true)
+  const [snakeNewBadge, setSnakeNewBadge] = useState(() => !tipHidden(SNAKE_TIP_KEY))
+  const snakeCardRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -108,6 +123,43 @@ export function Home({ onOpenGame }: Props) {
       cancelled = true
     }
   }, [tab])
+
+  useEffect(() => {
+    if (tipHidden(SNAKE_TIP_KEY)) return
+    const show = () => {
+      setSnakeTipOpen(true)
+      requestAnimationFrame(() => {
+        snakeCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
+    }
+    if (tipHidden(SOUND_TIP_KEY)) {
+      show()
+      return
+    }
+    window.addEventListener('bablooh-sound-tip-closed', show)
+    return () => window.removeEventListener('bablooh-sound-tip-closed', show)
+  }, [])
+
+  const dismissSnakeTip = (persist: boolean) => {
+    hapticLight()
+    if (persist) {
+      try {
+        localStorage.setItem(SNAKE_TIP_KEY, '1')
+      } catch {
+        /* ignore */
+      }
+      setSnakeNewBadge(false)
+    }
+    setSnakeTipOpen(false)
+  }
+
+  const openGame = (g: (typeof GAMES)[number]) => {
+    hapticLight()
+    if (g.id === 'snake' && snakeTipOpen) dismissSnakeTip(snakeDontShowAgain)
+    if (g.react === 'ninja') onOpenGame('ninja-react')
+    else if (g.react === 'snake') onOpenGame('snake-react')
+    else onOpenGame(g.id, g.file)
+  }
 
   return (
     <motion.main className="home" exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
@@ -150,35 +202,90 @@ export function Home({ onOpenGame }: Props) {
       </section>
 
       <section className="games">
-        {GAMES.map((g) => (
-          <motion.button
-            key={g.id}
-            type="button"
-            className="game"
-            whileHover={{ scale: 1.02, x: 4 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => {
-              hapticLight()
-              if (g.react === 'ninja') onOpenGame('ninja-react')
-              else if (g.react === 'snake') onOpenGame('snake-react')
-              else onOpenGame(g.id, g.file)
-            }}
-          >
-            <span className="emoji">
-              <img
-                className={`game-icon-img${g.iconClass ? ` ${g.iconClass}` : ''}`}
-                src={g.icon}
-                alt=""
-                draggable={false}
-              />
-            </span>
-            <span className="info">
-              <b>{g.title}</b>
-              <small>{g.desc}</small>
-            </span>
-            <span className="arrow">›</span>
-          </motion.button>
-        ))}
+        {GAMES.map((g) => {
+          const isSnake = g.id === 'snake'
+          const highlight = isSnake && snakeTipOpen
+          return (
+            <div
+              key={g.id}
+              className={`game-slot${highlight ? ' game-slot--tip' : ''}`}
+            >
+              <motion.button
+                ref={isSnake ? snakeCardRef : undefined}
+                type="button"
+                className={`game${highlight ? ' game--pulse' : ''}`}
+                whileHover={{ scale: 1.02, x: 4 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => openGame(g)}
+              >
+                {isSnake && snakeNewBadge && (
+                  <span className="game-new-badge" aria-hidden>
+                    NEW
+                  </span>
+                )}
+                <span className="emoji">
+                  <img
+                    className={`game-icon-img${g.iconClass ? ` ${g.iconClass}` : ''}`}
+                    src={g.icon}
+                    alt=""
+                    draggable={false}
+                  />
+                </span>
+                <span className="info">
+                  <b>{g.title}</b>
+                  <small>{g.desc}</small>
+                </span>
+                <span className="arrow">›</span>
+              </motion.button>
+
+              <AnimatePresence>
+                {highlight && (
+                  <motion.div
+                    className="sound-tip game-snake-tip"
+                    role="dialog"
+                    aria-labelledby="snake-tip-title"
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                    transition={{ type: 'spring', stiffness: 360, damping: 26 }}
+                  >
+                    <div className="sound-tip-arrow game-snake-tip-arrow" aria-hidden />
+                    <p id="snake-tip-title" className="sound-tip-title">
+                      Новое: Snake Bablooh
+                    </p>
+                    <p className="sound-tip-text">
+                      Классическая змейка с бутербродами — заходи и бей рекорд!
+                    </p>
+                    <label className="sound-tip-check">
+                      <input
+                        type="checkbox"
+                        checked={snakeDontShowAgain}
+                        onChange={(e) => setSnakeDontShowAgain(e.target.checked)}
+                      />
+                      <span>Больше не показывать</span>
+                    </label>
+                    <div className="sound-tip-actions">
+                      <button
+                        type="button"
+                        className="sound-tip-secondary"
+                        onClick={() => dismissSnakeTip(false)}
+                      >
+                        Позже
+                      </button>
+                      <button
+                        type="button"
+                        className="sound-tip-primary"
+                        onClick={() => dismissSnakeTip(snakeDontShowAgain)}
+                      >
+                        Понятно
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )
+        })}
       </section>
 
       <section className="leaderboard">

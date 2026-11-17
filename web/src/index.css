@@ -94,7 +94,16 @@ body {
   gap: 13px;
 }
 
+.game-slot {
+  position: relative;
+}
+
+.game-slot--tip {
+  z-index: 30;
+}
+
 .game {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -106,6 +115,52 @@ body {
   color: #fff;
   text-align: left;
   cursor: pointer;
+}
+
+.game--pulse {
+  border-color: #ff9ad8aa;
+  box-shadow: 0 0 0 3px #ff54c844, 0 10px 28px #ff54c833;
+  animation: game-tip-glow 1.6s ease-in-out infinite;
+}
+
+@keyframes game-tip-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px #ff54c844, 0 10px 28px #ff54c833;
+  }
+  50% {
+    box-shadow: 0 0 0 7px #ff54c822, 0 12px 32px #ff54c855;
+  }
+}
+
+.game-new-badge {
+  position: absolute;
+  top: 8px;
+  right: 40px;
+  z-index: 1;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ff54b8, #c44be0);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  box-shadow: 0 4px 12px #0005;
+}
+
+.game-snake-tip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 10px);
+  width: auto;
+  z-index: 4;
+}
+
+.game-snake-tip-arrow {
+  left: 28px;
+  right: auto;
 }
 
 .emoji {
@@ -299,7 +354,13 @@ body {
   right: 12px;
 }
 
+.sound-control--tip {
+  z-index: 40;
+}
+
 .sound-btn {
+  position: relative;
+  z-index: 2;
   border: 0;
   padding: 0;
   background: transparent;
@@ -314,8 +375,136 @@ body {
   pointer-events: none;
 }
 
+.sound-btn--pulse::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  border: 2px solid #ff9ad8;
+  box-shadow: 0 0 0 6px #ff54c833;
+  animation: sound-tip-pulse 1.4s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes sound-tip-pulse {
+  0% {
+    transform: scale(0.92);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.28);
+    opacity: 0;
+  }
+}
+
+.sound-tip-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background: #140a18a8;
+  cursor: pointer;
+}
+
+.sound-tip {
+  position: absolute;
+  z-index: 3;
+  top: calc(100% + 14px);
+  right: 0;
+  width: min(280px, calc(100vw - 28px));
+  padding: 16px 16px 14px;
+  border-radius: 18px;
+  background: linear-gradient(165deg, #3a2048f2, #24142df5 70%);
+  border: 1px solid #ffb5e655;
+  box-shadow: 0 16px 40px #0009;
+  text-align: left;
+}
+
+.sound-tip-arrow {
+  position: absolute;
+  top: -7px;
+  right: 14px;
+  width: 14px;
+  height: 14px;
+  background: #3a2048;
+  border-top: 1px solid #ffb5e655;
+  border-right: 1px solid #ffb5e655;
+  transform: rotate(-45deg);
+}
+
+.sound-tip-title {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffe6f7;
+}
+
+.sound-tip-text {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #f0d4ea;
+}
+
+.sound-tip-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e8cfe5;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sound-tip-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: #ff70c8;
+  cursor: pointer;
+}
+
+.sound-tip-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.sound-tip-secondary,
+.sound-tip-primary {
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 12px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sound-tip-secondary {
+  background: #ffffff18;
+  border: 1px solid #ffffff28;
+  color: #ffe0f6;
+}
+
+.sound-tip-primary {
+  background: linear-gradient(135deg, #ff54b8, #b74be8);
+  color: #fff;
+  box-shadow: 0 4px 0 #923a9d;
+}
+
+.sound-tip-primary:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #923a9d;
+}
+
 .sound-panel {
   position: absolute;
+  z-index: 2;
   top: calc(100% + 8px);
   right: 0;
   width: min(220px, 70vw);
