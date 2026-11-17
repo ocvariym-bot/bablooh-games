@@ -1,0 +1,191 @@
+.ninja-page {
+  width: min(100%, 480px);
+  margin: 0 auto;
+  text-align: center;
+  padding: 8px 0 16px;
+}
+
+.ninja-logo {
+  margin: 0;
+  font-size: clamp(27px, 7vw, 38px);
+  font-weight: 1000;
+  letter-spacing: 1px;
+  color: #ffe0f6;
+  text-shadow: 0 3px 15px #ff54c8;
+}
+
+.ninja-tag {
+  font-size: 12px;
+  margin: 3px 0 12px;
+  color: #f5d8ef;
+}
+
+.ninja-frame {
+  position: relative;
+  border: 3px solid #f8b8e7;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 18px 55px #0008;
+  background: #2b1735;
+}
+
+.ninja-frame canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ninja-vectors {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.ninja-sprite {
+  position: absolute;
+  transform-origin: center center;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 6px 10px #0005);
+}
+
+.ninja-sprite svg,
+.ninja-sprite .ninja-head-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.ninja-cast-head {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: #1a0f20;
+  box-shadow: 0 4px 12px #0003;
+}
+
+.ninja-bonus-ring {
+  position: absolute;
+  inset: -6%;
+  border: 3px solid #ffe36b;
+  border-radius: 50%;
+  color: #ffe36b;
+  font: 900 12px/1 system-ui, sans-serif;
+  display: grid;
+  place-items: start center;
+  padding-top: 0;
+  pointer-events: none;
+}
+
+.ninja-bonus-ring::after {
+  content: none;
+}
+
+.ninja-hud {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 950;
+  font-size: 14px;
+  text-shadow: 0 2px 6px #30102f;
+  pointer-events: none;
+}
+
+.ninja-hud span {
+  background: #2b173599;
+  border: 1px solid #ffffff30;
+  border-radius: 12px;
+  padding: 6px 9px;
+  white-space: nowrap;
+}
+
+.ninja-overlay {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: #21102799;
+  backdrop-filter: blur(4px);
+}
+
+.ninja-panel {
+  width: min(100%, 320px);
+  background: #fff0f9ee;
+  color: #54244e;
+  border: 2px solid #fff;
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: 0 10px 35px #4d1b4c66;
+}
+
+.ninja-panel h2 {
+  margin: 0 0 8px;
+  font-size: 26px;
+}
+
+.ninja-panel p {
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 5px 0 16px;
+}
+
+.ninja-cast {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.ninja-loss {
+  float: left;
+  width: 108px;
+  height: 108px;
+  object-fit: cover;
+  border-radius: 18px;
+  margin: 0 12px 8px 0;
+  filter: drop-shadow(0 5px 10px #0003);
+  background: #1a0f20;
+}
+
+.ninja-panel::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+.ninja-btn {
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff55b9, #a94de0);
+  color: white;
+  font-size: 16px;
+  font-weight: 900;
+  padding: 13px 27px;
+  box-shadow: 0 5px 0 #82368f;
+  cursor: pointer;
+}
+
+.ninja-hint {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-top: 10px;
+  color: #e8cfe5;
+}
