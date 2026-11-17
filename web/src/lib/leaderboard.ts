@@ -1,7 +1,7 @@
 const SUPABASE_URL = 'https://pxjuqmjtlbfhfsullwdu.supabase.co'
 const SUPABASE_KEY = 'sb_publishable_rlLNGhYLo8CRwXpaHh5kEw_ozuW1_D0'
 
-export type GameId = 'flappy' | 'eggs' | 'doodle' | 'ninja'
+export type GameId = 'flappy' | 'eggs' | 'doodle' | 'ninja' | 'snake'
 
 export type LeaderRow = {
   display_name: string

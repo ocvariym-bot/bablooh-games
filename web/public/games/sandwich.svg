@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none">
+  <!-- soft shadow -->
+  <ellipse cx="64" cy="112" rx="40" ry="8" fill="#000" opacity=".18"/>
+
+  <!-- bottom bun -->
+  <path d="M22 78c0 14 18 24 42 24s42-10 42-24c0-4-8-8-42-8s-42 4-42 8z" fill="#E8A45A"/>
+  <path d="M24 76c2 10 16 18 40 18s38-8 40-18" stroke="#C47A35" stroke-width="3" stroke-linecap="round" opacity=".45"/>
+
+  <!-- cucumber slices -->
+  <ellipse cx="40" cy="70" rx="16" ry="7" fill="#6FBF3F" transform="rotate(-8 40 70)"/>
+  <ellipse cx="40" cy="70" rx="12" ry="4.5" fill="#8FD45A" transform="rotate(-8 40 70)"/>
+  <ellipse cx="40" cy="70" rx="5" ry="2" fill="#DFF5B8" transform="rotate(-8 40 70)" opacity=".7"/>
+
+  <ellipse cx="64" cy="68" rx="17" ry="7.5" fill="#62B236"/>
+  <ellipse cx="64" cy="68" rx="12.5" ry="4.8" fill="#84D04E"/>
+  <ellipse cx="64" cy="68" rx="5.2" ry="2.1" fill="#E5F8C2" opacity=".75"/>
+
+  <ellipse cx="88" cy="70" rx="16" ry="7" fill="#6FBF3F" transform="rotate(8 88 70)"/>
+  <ellipse cx="88" cy="70" rx="12" ry="4.5" fill="#8FD45A" transform="rotate(8 88 70)"/>
+  <ellipse cx="88" cy="70" rx="5" ry="2" fill="#DFF5B8" transform="rotate(8 88 70)" opacity=".7"/>
+
+  <!-- cucumber bumps -->
+  <circle cx="34" cy="68" r="1.4" fill="#4E9A2A" opacity=".55"/>
+  <circle cx="46" cy="72" r="1.2" fill="#4E9A2A" opacity=".45"/>
+  <circle cx="58" cy="66" r="1.3" fill="#4E9A2A" opacity=".5"/>
+  <circle cx="72" cy="70" r="1.2" fill="#4E9A2A" opacity=".45"/>
+  <circle cx="84" cy="68" r="1.3" fill="#4E9A2A" opacity=".5"/>
+  <circle cx="94" cy="72" r="1.1" fill="#4E9A2A" opacity=".4"/>
+
+  <!-- cheese -->
+  <path d="M26 60c8-6 28-10 38-10s30 4 38 10l-4 8c-10-5-26-8-34-8s-24 3-34 8l-4-8z" fill="#F6D35A"/>
+  <path d="M30 66c10-4 24-6 34-6s24 2 34 6" stroke="#E6B83A" stroke-width="2" opacity=".5"/>
+
+  <!-- sausage / ham -->
+  <path d="M28 52c10-7 26-11 36-11s26 4 36 11c-2 7-14 12-36 12S30 59 28 52z" fill="#E85D6A"/>
+  <path d="M34 50c8-3 18-5 30-5s22 2 30 5" stroke="#FF8A96" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>
+
+  <!-- lettuce -->
+  <path d="M24 46c6-8 16-6 22-10 8-5 14 2 22-2 7-4 14 1 20 2 8 2 14-4 18 2-2 6-10 8-18 9-9 1-14-3-22 0-7 3-14 1-22 3-6 1-14-1-20-4z" fill="#7DCF45"/>
+  <path d="M30 44c8-4 16 0 24-3 7-3 14 1 22 0 6-1 12-3 16 1" stroke="#5AAE2E" stroke-width="2" stroke-linecap="round" opacity=".45"/>
+
+  <!-- top bun -->
+  <path d="M20 44c4-22 22-34 44-34s40 12 44 34c-2 8-18 14-44 14S22 52 20 44z" fill="#F0B15F"/>
+  <path d="M28 28c8-10 22-16 36-16 12 0 24 5 32 14" stroke="#D48A3C" stroke-width="3" stroke-linecap="round" opacity=".35"/>
+
+  <!-- sesame seeds -->
+  <ellipse cx="44" cy="26" rx="3.2" ry="1.8" fill="#FFF3D6" transform="rotate(-25 44 26)"/>
+  <ellipse cx="58" cy="20" rx="3.4" ry="1.9" fill="#FFF3D6" transform="rotate(10 58 20)"/>
+  <ellipse cx="74" cy="22" rx="3.1" ry="1.7" fill="#FFF3D6" transform="rotate(-15 74 22)"/>
+  <ellipse cx="88" cy="30" rx="3.2" ry="1.8" fill="#FFF3D6" transform="rotate(20 88 30)"/>
+  <ellipse cx="52" cy="34" rx="2.8" ry="1.5" fill="#FFF3D6" transform="rotate(5 52 34)"/>
+  <ellipse cx="68" cy="32" rx="2.9" ry="1.6" fill="#FFF3D6" transform="rotate(-8 68 32)"/>
+</svg>

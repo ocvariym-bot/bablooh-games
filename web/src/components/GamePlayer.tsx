@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion'
 import { NinjaGame } from '../games/ninja/NinjaGame'
+import { SnakeGame } from '../games/snake/SnakeGame'
+import { hapticLight } from '../lib/telegram'
 
 type Props = {
-  mode: 'iframe' | 'ninja'
+  mode: 'iframe' | 'ninja' | 'snake'
   src?: string
   onBack: () => void
 }
@@ -19,16 +21,19 @@ export function GamePlayer({ mode, src, onBack }: Props) {
       <motion.button
         type="button"
         className="back-btn"
-        onClick={onBack}
+        onClick={() => {
+          hapticLight()
+          onBack()
+        }}
         whileHover={{ scale: 1.04 }}
         whileTap={{ scale: 0.96 }}
       >
         ← Все игры
       </motion.button>
 
-      {mode === 'ninja' ? (
+      {mode === 'ninja' || mode === 'snake' ? (
         <div className="player-react">
-          <NinjaGame />
+          {mode === 'ninja' ? <NinjaGame /> : <SnakeGame />}
         </div>
       ) : (
         <iframe className="game-frame" title="Игра" src={src} allow="fullscreen" />

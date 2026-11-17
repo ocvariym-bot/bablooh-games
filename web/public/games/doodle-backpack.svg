@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none">
+  <ellipse cx="64" cy="118" rx="28" ry="6" fill="#000" opacity=".18"/>
+  <!-- straps -->
+  <path d="M42 38c-6 10-8 28-6 44" stroke="#6B3FA0" stroke-width="7" stroke-linecap="round"/>
+  <path d="M86 38c6 10 8 28 6 44" stroke="#6B3FA0" stroke-width="7" stroke-linecap="round"/>
+  <!-- body -->
+  <path d="M34 34c0-14 14-24 30-24s30 10 30 24v52c0 12-12 20-30 20s-30-8-30-20V34z" fill="#B85BD1"/>
+  <path d="M40 36c0-10 11-18 24-18s24 8 24 18v48c0 9-10 15-24 15s-24-6-24-15V36z" fill="#E28BFF"/>
+  <!-- pocket -->
+  <path d="M48 62h32c4 0 7 3 7 7v18c0 6-6 11-13 11H54c-7 0-13-5-13-11V69c0-4 3-7 7-7z" fill="#9B45C4"/>
+  <path d="M48 70h32" stroke="#FFD6FF" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+  <!-- jet nozzles -->
+  <rect x="46" y="98" width="12" height="10" rx="3" fill="#6B3FA0"/>
+  <rect x="70" y="98" width="12" height="10" rx="3" fill="#6B3FA0"/>
+  <!-- flame -->
+  <path d="M52 108c0 8 4 14 6 18 2-4 6-10 6-18-3 2-6 2-12 0z" fill="#FFB347"/>
+  <path d="M76 108c0 8 4 14 6 18 2-4 6-10 6-18-3 2-6 2-12 0z" fill="#FFB347"/>
+  <path d="M54 110c1 5 3 9 4 12 1-3 3-7 4-12-2 1-4 1-8 0z" fill="#FFE36B"/>
+  <path d="M78 110c1 5 3 9 4 12 1-3 3-7 4-12-2 1-4 1-8 0z" fill="#FFE36B"/>
+  <!-- badge -->
+  <circle cx="64" cy="48" r="10" fill="#FFE36B"/>
+  <path d="M64 42v12M58 48h12" stroke="#B85BD1" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

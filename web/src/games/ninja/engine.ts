@@ -1,19 +1,30 @@
 import { createSvgElement } from '../../components/characters/mountSvg'
 import { submitScore } from '../../lib/leaderboard'
+import {
+  hapticError,
+  hapticHeavy,
+  hapticMedium,
+  hapticRigid,
+  hapticSoft,
+  hapticSuccess,
+} from '../../lib/telegram'
 
 export const W = 440
 export const H = 700
 
-/** Cropped head sprites for Ninja targets */
+/** Vacuum sprites for Ninja targets */
 export const NINJA_HEAD_SRCS = [
-  '/characters/krasnoyarsk.png',
-  '/characters/novosib.png',
-  '/characters/nast.png',
+  '/characters/vacuum-canister.webp',
+  '/characters/vacuum-stick.webp',
+  '/characters/vacuum-robot.webp',
 ] as const
+
+/** Distinct gold turbo vacuum (multi-slice bonus) */
+export const NINJA_FRENZY_SRC = '/characters/vacuum-turbo.webp'
 
 export type GameState = 'ready' | 'playing' | 'over'
 
-type ObjType = 'head' | 'bonus' | 'bomb'
+type ObjType = 'head' | 'bonus' | 'bomb' | 'frenzy'
 
 type Flying = {
   id: number
@@ -28,6 +39,11 @@ type Flying = {
   rot: number
   vr: number
   hit: boolean
+  /** Freeze & multi-slice bonus target */
+  frenzyActive?: boolean
+  frenzyTime?: number
+  frenzyHits?: number
+  lastFrenzyHit?: number
 }
 
 type Half = {
@@ -67,6 +83,7 @@ export type HudSnapshot = {
   state: GameState
   title: string
   desc: string
+  frenzyLabel?: string
 }
 
 type SpriteNode = {
@@ -81,7 +98,7 @@ export class NinjaEngine {
   state: GameState = 'ready'
   title = 'Готов резать?'
   desc =
-    'Проводи пальцем или мышью по головам, чтобы разрезать их и получать очки. Не пропусти три головы и не задень бомбу!'
+    'Проводи пальцем по пылесосам — обычный, вертикальный и робот. Золотой турбо-пылесос можно рубить много раз подряд. Не пропусти три штуки и не задень бомбу!'
 
   private objects: Flying[] = []
   private halves: Half[] = []
@@ -99,6 +116,7 @@ export class NinjaEngine {
   private layer: HTMLElement
   private sprites = new Map<number, SpriteNode>()
   private onHud: (h: HudSnapshot) => void
+  private activeFrenzyLabel = ''
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -120,10 +138,12 @@ export class NinjaEngine {
       state: this.state,
       title: this.title,
       desc: this.desc,
+      frenzyLabel: this.activeFrenzyLabel || undefined,
     })
   }
 
   start() {
+    hapticSoft()
     this.clearSprites()
     this.score = 0
     this.missed = 0
@@ -134,6 +154,7 @@ export class NinjaEngine {
     this.spawnClock = 0
     this.shake = 0
     this.slowBoost = 0
+    this.activeFrenzyLabel = ''
     this.state = 'playing'
     this.emitHud()
     this.spawn()
@@ -156,6 +177,8 @@ export class NinjaEngine {
 
   private finish(reason: string) {
     if (this.state !== 'playing') return
+    if (reason.includes('бомб')) hapticHeavy()
+    else hapticError()
     void submitScore('ninja', this.score)
     this.state = 'over'
     if (this.score > this.best) {
@@ -168,42 +191,63 @@ export class NinjaEngine {
   }
 
   private spawn() {
-    const bomb = Math.random() < 0.17
-    const bonus = !bomb && Math.random() < 0.13
-    // Heads are larger photo sprites
-    const size = bomb ? rand(52, 64) : rand(118, 148)
-    // Random arc: sometimes high lob, sometimes flatter throw
+    const roll = Math.random()
+    const bomb = roll < 0.15
+    const frenzy = !bomb && roll < 0.24
+    const bonus = !bomb && !frenzy && Math.random() < 0.14
+    const type: ObjType = bomb ? 'bomb' : frenzy ? 'frenzy' : bonus ? 'bonus' : 'head'
+    const size = bomb ? rand(52, 64) : frenzy ? rand(150, 168) : rand(118, 148)
     const high = Math.random() < 0.45
     const vy = high ? rand(-18.5, -14.2) : rand(-14.8, -11.2)
-    // Mild horizontal drift toward center so heads stay cuttable
     const x = rand(90, W - 90)
     const towardCenter = x < W / 2 ? rand(0.2, 2.0) : rand(-2.0, -0.2)
     const vx = towardCenter + rand(-0.6, 0.6)
     const obj: Flying = {
       id: this.nextId++,
-      type: bomb ? 'bomb' : bonus ? 'bonus' : 'head',
+      type,
       imageIndex: Math.floor(Math.random() * NINJA_HEAD_SRCS.length),
       x,
       y: H + size,
       vx,
       vy,
-      r: size * 0.42,
+      r: size * (frenzy ? 0.48 : 0.42),
       size,
       rot: rand(-0.45, 0.45),
       vr: rand(-0.05, 0.05),
       hit: false,
+      frenzyHits: 0,
+      frenzyTime: 0,
+      lastFrenzyHit: 0,
     }
     this.objects.push(obj)
     this.mountFull(obj)
+    if (type === 'frenzy') this.clearNonFrenzyObjects()
   }
 
-  private createHeadImg(imageIndex: number) {
+  private createHeadImg(imageIndex: number, src?: string) {
     const img = document.createElement('img')
-    img.src = NINJA_HEAD_SRCS[imageIndex % NINJA_HEAD_SRCS.length]!
+    img.src = src || NINJA_HEAD_SRCS[imageIndex % NINJA_HEAD_SRCS.length]!
     img.alt = ''
     img.draggable = false
     img.className = 'ninja-head-img'
     return img
+  }
+
+  private hasFrenzyOnField() {
+    return this.objects.some((o) => o.type === 'frenzy' && !o.hit)
+  }
+
+  /** Clear bombs/other targets so turbo mode is safe */
+  private clearNonFrenzyObjects() {
+    const keep: Flying[] = []
+    for (const o of this.objects) {
+      if (o.type === 'frenzy' && !o.hit) {
+        keep.push(o)
+        continue
+      }
+      this.removeSprite(o.id)
+    }
+    this.objects = keep
   }
 
   private mountFull(o: Flying) {
@@ -212,6 +256,8 @@ export class NinjaEngine {
     root.dataset.id = String(o.id)
     if (o.type === 'bomb') {
       root.appendChild(createSvgElement('bomb'))
+    } else if (o.type === 'frenzy') {
+      root.appendChild(this.createHeadImg(o.imageIndex, NINJA_FRENZY_SRC))
     } else {
       root.appendChild(this.createHeadImg(o.imageIndex))
     }
@@ -221,9 +267,36 @@ export class NinjaEngine {
       ring.textContent = '+3'
       root.appendChild(ring)
     }
+    if (o.type === 'frenzy') {
+      const ring = document.createElement('div')
+      ring.className = 'ninja-frenzy-ring'
+      ring.dataset.role = 'frenzy-ring'
+      ring.textContent = 'ТУРБО'
+      root.appendChild(ring)
+      root.classList.add('ninja-sprite--frenzy')
+    }
     this.layer.appendChild(root)
     this.sprites.set(o.id, { root, kind: 'full' })
     this.placeFull(o)
+  }
+
+  private updateFrenzyRing(o: Flying) {
+    const node = this.sprites.get(o.id)
+    if (!node) return
+    const ring = node.root.querySelector('[data-role="frenzy-ring"]')
+    if (!ring) return
+    const hits = o.frenzyHits || 0
+    ring.textContent = hits > 0 ? `×${hits}` : 'ТУРБО'
+  }
+
+  private endFrenzy(o: Flying) {
+    o.hit = true
+    this.activeFrenzyLabel = ''
+    this.burst(o.x, o.y, '#ffe36b', 28)
+    this.burst(o.x, o.y, '#ff8bcf', 14)
+    this.shake = Math.max(this.shake, 8)
+    this.removeSprite(o.id)
+    this.emitHud()
   }
 
   private mountHalf(h: Half) {
@@ -287,7 +360,10 @@ export class NinjaEngine {
   private splitHead(o: Flying, dx: number, dy: number) {
     o.hit = true
     this.score += o.type === 'bonus' ? 3 : 1
-    if (o.type === 'bonus') this.slowBoost = 180
+    if (o.type === 'bonus') {
+      this.slowBoost = 180
+      hapticSuccess()
+    } else hapticMedium()
     this.emitHud()
     this.burst(o.x, o.y, o.type === 'bonus' ? '#ffe36b' : '#ff8bcf', 17)
     this.burst(o.x, o.y, '#fff0a8', 8)
@@ -344,6 +420,7 @@ export class NinjaEngine {
 
   private slice(x1: number, y1: number, x2: number, y2: number) {
     if (Math.hypot(x2 - x1, y2 - y1) < 5) return
+    const now = performance.now()
     for (const o of this.objects) {
       if (o.hit) continue
       if (this.pointSegmentDistance(o.x, o.y, x1, y1, x2, y2) < o.r + 9) {
@@ -355,9 +432,41 @@ export class NinjaEngine {
           this.finish('БА-БАХ! Ты задел бомбу 💣')
           return
         }
+        if (o.type === 'frenzy') {
+          this.hitFrenzy(o, now)
+          continue
+        }
         this.splitHead(o, x2 - x1, y2 - y1)
       }
     }
+  }
+
+  private hitFrenzy(o: Flying, now: number) {
+    if (!o.frenzyActive) {
+      o.frenzyActive = true
+      o.frenzyTime = 170
+      o.vx = 0
+      o.vy = 0
+      o.vr = 0.035
+      o.x = Math.max(o.size / 2 + 8, Math.min(W - o.size / 2 - 8, o.x))
+      o.y = Math.max(o.size / 2 + 40, Math.min(H * 0.55, o.y))
+      this.clearNonFrenzyObjects()
+      const node = this.sprites.get(o.id)
+      node?.root.classList.add('ninja-sprite--frenzy-active')
+      this.activeFrenzyLabel = 'ТУРБО! Руби!'
+      this.shake = Math.max(this.shake, 6)
+      hapticSuccess()
+    }
+    if (now - (o.lastFrenzyHit || 0) < 95) return
+    o.lastFrenzyHit = now
+    o.frenzyHits = (o.frenzyHits || 0) + 1
+    this.score += 1
+    hapticRigid()
+    this.burst(o.x, o.y, '#ffe36b', 10)
+    this.burst(o.x + rand(-12, 12), o.y + rand(-12, 12), '#fff0a8', 6)
+    this.updateFrenzyRing(o)
+    this.activeFrenzyLabel = `ТУРБО ×${o.frenzyHits}`
+    this.emitHud()
   }
 
   private coords(e: PointerEvent) {
@@ -486,12 +595,23 @@ export class NinjaEngine {
       dt *= 0.55
     }
     this.spawnClock += dt
-    if (this.spawnClock > Math.max(27, 58 - this.score * 0.32)) {
+    if (
+      !this.hasFrenzyOnField() &&
+      this.spawnClock > Math.max(27, 58 - this.score * 0.32)
+    ) {
       this.spawn()
       if (Math.random() < Math.min(0.34, 0.08 + this.score * 0.006)) this.spawn()
       this.spawnClock = 0
+    } else if (this.hasFrenzyOnField()) {
+      this.spawnClock = 0
     }
     for (const o of this.objects) {
+      if (o.type === 'frenzy' && o.frenzyActive) {
+        o.frenzyTime = Math.max(0, (o.frenzyTime || 0) - dt)
+        o.rot += o.vr * dt
+        if ((o.frenzyTime || 0) <= 0) this.endFrenzy(o)
+        continue
+      }
       o.x += o.vx * dt
       o.y += o.vy * dt
       o.vy += 0.27 * dt

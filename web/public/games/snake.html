@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet"><title>Snake Bablooh</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#24132d;color:#fff;font-family:'Nunito',sans-serif}
+body{display:grid;place-items:center;padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom));background:radial-gradient(ellipse at 50% 0%,#693a70,#24132d 70%)}
+.shell{width:min(100%,460px);text-align:center}
+.brand{font-family:'Fredoka',sans-serif;font-weight:700;letter-spacing:0.5px;color:#ffd8f5;text-shadow:0 3px 16px #ff68c9;font-size:clamp(23px,6vw,34px);margin:2px 0 3px}
+.sub{font-size:12px;opacity:.78;margin:0 0 12px}
+.frame{position:relative;border:3px solid #f7b6e7;border-radius:24px;overflow:hidden;box-shadow:0 0 0 5px #ffffff18,0 18px 55px #0008;background:#2a1533}
+canvas{display:block;width:100%;height:auto;aspect-ratio:1/1;touch-action:none;background:#1c1024}
+.hud{position:absolute;top:12px;left:0;right:0;display:flex;justify-content:space-between;padding:0 16px;font-weight:900;font-size:18px;text-shadow:0 2px 5px #7c3375;pointer-events:none}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;background:#38183a66;backdrop-filter:blur(3px)}
+.panel{max-width:300px;background:#fff0fbeb;color:#54244e;border:2px solid white;border-radius:22px;padding:22px 20px;box-shadow:0 10px 35px #5d235566}
+.panel h2{margin:0 0 8px;font-size:25px}
+.panel p{margin:5px 0 16px;font-size:14px;line-height:1.45}
+button.play{border:0;border-radius:999px;background:linear-gradient(135deg,#ff54b8,#b74be8);color:white;font-size:16px;font-weight:850;padding:13px 27px;box-shadow:0 5px 0 #923a9d;cursor:pointer}
+button.play:active{transform:translateY(3px);box-shadow:0 2px 0 #923a9d}
+.help{font-size:12px;opacity:.75;margin-top:12px}
+.loss-image{display:none;width:148px;height:148px;object-fit:cover;object-position:center 88%;border-radius:28px;margin:0 auto 12px;background:#1a0f20;filter:drop-shadow(0 8px 16px #0004)}
+.panel:after{content:"";display:block;clear:both}
+.pad{margin-top:14px;display:grid;grid-template-columns:repeat(3,56px);grid-template-rows:repeat(3,48px);gap:8px;justify-content:center;user-select:none}
+.pad button{border:1px solid #ffffff35;border-radius:14px;background:#ffffff18;color:#ffe0f6;font-size:22px;font-weight:900;cursor:pointer}
+.pad button:active{background:#ff70c888}
+.pad .u{grid-column:2;grid-row:1}
+.pad .l{grid-column:1;grid-row:2}
+.pad .r{grid-column:3;grid-row:2}
+.pad .d{grid-column:2;grid-row:3}
+.pad .ghost{visibility:hidden}
+</style>
+</head>
+<body>
+<main class="shell">
+  <div class="brand">SNAKE BABLOOH</div>
+  <div class="sub">СОБИРАЙ ЯЙЦА И РАСТИ — НЕ ВРЕЗАЙСЯ В СЕБЯ</div>
+  <div class="frame">
+    <canvas id="game" width="420" height="420" aria-label="Игра Snake Bablooh"></canvas>
+    <div class="hud"><span id="score">0</span><span id="best">РЕКОРД: 0</span></div>
+    <div class="overlay" id="overlay">
+      <div class="panel">
+        <img class="loss-image" src="game-over.webp" alt="Баблух проиграл">
+        <h2 id="headline">Готов?</h2>
+        <p id="message">Веди Баблуха по полю, ешь розовые яйца и становись длиннее. Не врезайся в стены и в себя!</p>
+        <button class="play" id="start">Играть</button>
+      </div>
+    </div>
+  </div>
+  <div class="pad" aria-label="Управление">
+    <button type="button" class="ghost" tabindex="-1">·</button>
+    <button type="button" class="u" data-dir="up" aria-label="Вверх">↑</button>
+    <button type="button" class="ghost" tabindex="-1">·</button>
+    <button type="button" class="l" data-dir="left" aria-label="Влево">←</button>
+    <button type="button" class="ghost" tabindex="-1">·</button>
+    <button type="button" class="r" data-dir="right" aria-label="Вправо">→</button>
+    <button type="button" class="ghost" tabindex="-1">·</button>
+    <button type="button" class="d" data-dir="down" aria-label="Вниз">↓</button>
+    <button type="button" class="ghost" tabindex="-1">·</button>
+  </div>
+  <div class="help">Свайп / стрелки / WASD / кнопки внизу</div>
+</main>
+<script>
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+const overlay=document.getElementById('overlay');
+const startBtn=document.getElementById('start');
+const scoreEl=document.getElementById('score');
+const bestEl=document.getElementById('best');
+const headImg=new Image(); headImg.src='flappy-sprite.webp';
+
+const COLS=14, ROWS=14, CELL=420/COLS;
+const DIRS={up:{x:0,y:-1},down:{x:0,y:1},left:{x:-1,y:0},right:{x:1,y:0}};
+const OPP={up:'down',down:'up',left:'right',right:'left'};
+
+let state='ready', score=0, best=Number(localStorage.getItem('babloohSnakeBest')||0);
+let snake=[], dir='right', nextDir='right', food=null, tickAcc=0, last=0, stepMs=150;
+bestEl.textContent='РЕКОРД: '+best;
+
+function randCell(){
+  return {x:Math.floor(Math.random()*COLS), y:Math.floor(Math.random()*ROWS)};
+}
+function onSnake(x,y){return snake.some(s=>s.x===x&&s.y===y)}
+function placeFood(){
+  let p, guard=0;
+  do{p=randCell(); guard++}while(onSnake(p.x,p.y)&&guard<200);
+  food=p;
+}
+function reset(){
+  const cx=Math.floor(COLS/2), cy=Math.floor(ROWS/2);
+  snake=[{x:cx,y:cy},{x:cx-1,y:cy},{x:cx-2,y:cy}];
+  dir='right'; nextDir='right'; score=0; stepMs=150; tickAcc=0;
+  scoreEl.textContent='0';
+  placeFood();
+}
+function setDir(name){
+  if(!DIRS[name]) return;
+  if(state==='ready'){begin(); queueMicrotask(()=>setDir(name)); return}
+  if(state!=='playing') return;
+  if(OPP[dir]===name) return;
+  nextDir=name;
+}
+function begin(){
+  reset();
+  state='playing';
+  overlay.querySelector('.loss-image').style.display='none';
+  overlay.style.display='none';
+  last=performance.now();
+  requestAnimationFrame(loop);
+}
+function end(){
+  if(state==='over') return;
+  submitBabloohScore('snake', score);
+  state='over';
+  best=Math.max(best,score);
+  localStorage.setItem('babloohSnakeBest', best);
+  bestEl.textContent='РЕКОРД: '+best;
+  document.getElementById('headline').textContent='Игра окончена!';
+  document.getElementById('message').textContent='Твой результат: '+score+'. Попробуешь вырасти ещё длиннее?';
+  startBtn.textContent='Ещё раз';
+  overlay.querySelector('.loss-image').style.display='block';
+  overlay.style.display='flex';
+}
+function step(){
+  dir=nextDir;
+  const h=snake[0];
+  const nx=h.x+DIRS[dir].x, ny=h.y+DIRS[dir].y;
+  if(nx<0||ny<0||nx>=COLS||ny>=ROWS||onSnake(nx,ny)){end(); return}
+  snake.unshift({x:nx,y:ny});
+  if(food&&nx===food.x&&ny===food.y){
+    score+=1;
+    scoreEl.textContent=score;
+    stepMs=Math.max(78, 150-score*3.2);
+    placeFood();
+  } else {
+    snake.pop();
+  }
+}
+function drawCellRound(x,y,pad,fill,stroke){
+  const r=10, px=x*CELL+pad, py=y*CELL+pad, s=CELL-pad*2;
+  ctx.beginPath();
+  ctx.moveTo(px+r,py);
+  ctx.arcTo(px+s,py,px+s,py+s,r);
+  ctx.arcTo(px+s,py+s,px,py+s,r);
+  ctx.arcTo(px,py+s,px,py,r);
+  ctx.arcTo(px,py,px+s,py,r);
+  ctx.closePath();
+  ctx.fillStyle=fill;
+  ctx.fill();
+  if(stroke){ctx.strokeStyle=stroke; ctx.lineWidth=2; ctx.stroke()}
+}
+function render(){
+  const g=ctx.createLinearGradient(0,0,0,420);
+  g.addColorStop(0,'#3a1d45'); g.addColorStop(1,'#1a0f22');
+  ctx.fillStyle=g; ctx.fillRect(0,0,420,420);
+  ctx.strokeStyle='#ffffff10'; ctx.lineWidth=1;
+  for(let i=0;i<=COLS;i++){
+    ctx.beginPath(); ctx.moveTo(i*CELL,0); ctx.lineTo(i*CELL,420); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,i*CELL); ctx.lineTo(420,i*CELL); ctx.stroke();
+  }
+  if(food){
+    const fx=food.x*CELL+CELL/2, fy=food.y*CELL+CELL/2;
+    const glow=ctx.createRadialGradient(fx,fy,2,fx,fy,CELL*0.7);
+    glow.addColorStop(0,'#ff9adf88'); glow.addColorStop(1,'#ff9adf00');
+    ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(fx,fy,CELL*0.7,0,7); ctx.fill();
+    drawCellRound(food.x,food.y,7,'#ff6ec7','#fff6');
+    ctx.fillStyle='#fff9'; ctx.beginPath(); ctx.arc(fx-4,fy-5,3.2,0,7); ctx.fill();
+  }
+  for(let i=snake.length-1;i>=1;i--){
+    const t=i/(snake.length||1);
+    const pink=`rgb(${255-Math.floor(t*70)},${84+Math.floor(t*40)},${200-Math.floor(t*50)})`;
+    drawCellRound(snake[i].x,snake[i].y,4,pink,'#ffffff33');
+  }
+  if(snake[0]){
+    const hx=snake[0].x*CELL, hy=snake[0].y*CELL;
+    drawCellRound(snake[0].x,snake[0].y,2,'#ff54c8','#ffffff55');
+    if(headImg.complete&&headImg.naturalWidth){
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(hx+CELL/2,hy+CELL/2,CELL*0.42,0,7);
+      ctx.clip();
+      ctx.drawImage(headImg,hx+1,hy+1,CELL-2,CELL-2);
+      ctx.restore();
+    }
+  }
+}
+function loop(t){
+  if(state!=='playing') return;
+  const dt=Math.min(t-last,64); last=t; tickAcc+=dt;
+  while(tickAcc>=stepMs){tickAcc-=stepMs; step(); if(state!=='playing') break}
+  render();
+  if(state==='playing') requestAnimationFrame(loop);
+}
+
+startBtn.addEventListener('click',()=>{ if(state==='over'||state==='ready') begin() });
+document.querySelectorAll('.pad button[data-dir]').forEach(btn=>{
+  btn.addEventListener('pointerdown',e=>{e.preventDefault(); setDir(btn.dataset.dir)});
+});
+window.addEventListener('keydown',e=>{
+  const map={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
+  if(e.code==='Space'||e.code==='Enter'){
+    e.preventDefault();
+    if(state==='ready'||state==='over') begin();
+    return;
+  }
+  if(map[e.code]){e.preventDefault(); setDir(map[e.code])}
+});
+
+let swipeX=0, swipeY=0, swiping=false;
+canvas.addEventListener('pointerdown',e=>{
+  swiping=true; swipeX=e.clientX; swipeY=e.clientY;
+  canvas.setPointerCapture?.(e.pointerId);
+  if(state==='ready') begin();
+});
+canvas.addEventListener('pointerup',e=>{
+  if(!swiping) return; swiping=false;
+  const dx=e.clientX-swipeX, dy=e.clientY-swipeY;
+  if(Math.hypot(dx,dy)<18) return;
+  if(Math.abs(dx)>Math.abs(dy)) setDir(dx>0?'right':'left');
+  else setDir(dy>0?'down':'up');
+});
+canvas.addEventListener('pointercancel',()=>{swiping=false});
+
+headImg.onload=()=>{reset(); render()};
+reset(); render();
+
+const BABLOOH_SUPABASE_URL='https://pxjuqmjtlbfhfsullwdu.supabase.co';
+const BABLOOH_SUPABASE_KEY='sb_publishable_rlLNGhYLo8CRwXpaHh5kEw_ozuW1_D0';
+async function submitBabloohScore(gameId, score){
+  try{
+    const initData=window.Telegram?.WebApp?.initData||'';
+    if(!initData){console.warn('Telegram initData отсутствует: результат не отправлен'); return}
+    const response=await fetch(`${BABLOOH_SUPABASE_URL}/functions/v1/submit-score`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json',apikey:BABLOOH_SUPABASE_KEY},
+      body:JSON.stringify({initData,gameId,score:Math.max(0,Math.floor(score))})
+    });
+    const responseText=await response.text();
+    if(!response.ok){console.error('BABLOOH score submit failed:',gameId,response.status,responseText); return false}
+    console.info('BABLOOH score accepted:',gameId,Math.max(0,Math.floor(score)),responseText);
+    return true;
+  }catch(error){console.error('BABLOOH score submit error:',gameId,error); return false}
+}
+</script>
+</body>
+</html>

@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="ru"><head>
 <script src="https://telegram.org/js/telegram-web-app.js"></script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Flappy Bablooh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet"><title>Flappy Bablooh</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#24132d;color:#fff;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#24132d;color:#fff;font-family:'Nunito',sans-serif}
 body{display:grid;place-items:center;padding:16px;background:radial-gradient(ellipse at 50% 0%,#693a70,#24132d 70%)}
-.shell{width:min(100%,460px);text-align:center}.brand{font-weight:900;letter-spacing:3px;color:#ffd8f5;text-shadow:0 3px 16px #ff68c9;font-size:clamp(23px,6vw,34px);margin:2px 0 3px}.sub{font-size:12px;opacity:.78;margin:0 0 12px}
+.shell{width:min(100%,460px);text-align:center}.brand{font-family:'Fredoka',sans-serif;font-weight:700;letter-spacing:0.5px;color:#ffd8f5;text-shadow:0 3px 16px #ff68c9;font-size:clamp(23px,6vw,34px);margin:2px 0 3px}.sub{font-size:12px;opacity:.78;margin:0 0 12px}
 .frame{position:relative;border:3px solid #f7b6e7;border-radius:24px;overflow:hidden;box-shadow:0 0 0 5px #ffffff18,0 18px 55px #0008;background:#e9a9e4}
 canvas{display:block;width:100%;height:auto;aspect-ratio:420/700;touch-action:manipulation}
 .hud{position:absolute;top:12px;left:0;right:0;display:flex;justify-content:space-between;padding:0 16px;font-weight:900;font-size:18px;text-shadow:0 2px 5px #7c3375;pointer-events:none}
@@ -14,18 +14,44 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:420/700;touch-action:ma
 .panel h2{margin:0 0 8px;font-size:25px}.panel p{margin:5px 0 16px;font-size:14px;line-height:1.45}
 button{border:0;border-radius:999px;background:linear-gradient(135deg,#ff54b8,#b74be8);color:white;font-size:16px;font-weight:850;padding:13px 27px;box-shadow:0 5px 0 #923a9d;cursor:pointer}button:active{transform:translateY(3px);box-shadow:0 2px 0 #923a9d}
 .help{font-size:12px;opacity:.75;margin-top:12px}
-.loss-image{display:none;width:104px;height:118px;object-fit:contain;float:left;margin:0 12px 8px 0;filter:drop-shadow(0 5px 10px #0003)} .panel:after{content:"";display:block;clear:both}</style></head><body><main class="shell">
+.loss-image{display:none;width:148px;height:148px;object-fit:cover;object-position:center 88%;border-radius:28px;margin:0 auto 12px;background:#1a0f20;filter:drop-shadow(0 8px 16px #0004)}.panel h2,.panel p{clear:both}</style></head><body><main class="shell">
 <div class="brand">FLAPPY BABLOOH</div><div class="sub">ПРОЛЕТИ МЕЖДУ РОЗОВЫМИ ПРЕПЯТСТВИЯМИ</div>
 <div class="frame"><canvas id="game" width="420" height="700" aria-label="Игра Flappy Bablooh"></canvas>
 <div class="hud"><span id="score">0</span><span id="best">РЕКОРД: 0</span></div>
-<div class="overlay" id="overlay"><div class="panel"><img class="loss-image" src="game-over.png" alt="Баблух проиграл"><h2 id="headline">Готов?</h2><p id="message">Помоги герою пролететь как можно дальше. Нажимай, чтобы подпрыгнуть!</p><button id="start">Играть</button></div></div>
+<div class="overlay" id="overlay"><div class="panel"><img class="loss-image" src="game-over.webp" alt="Баблух проиграл"><h2 id="headline">Готов?</h2><p id="message">Помоги герою пролететь как можно дальше. Нажимай, чтобы подпрыгнуть!</p><button id="start">Играть</button></div></div>
 </div><div class="help">Управление: ПРОБЕЛ / ↑ / клик / касание экрана</div>
 </main>
 <script>
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
 const overlay=document.getElementById('overlay'),startBtn=document.getElementById('start');
 const scoreEl=document.getElementById('score'),bestEl=document.getElementById('best');
-const sprite=new Image();sprite.src='flappy-sprite.png';
+
+function tgHaptic(kind){
+  try{
+    const h=window.Telegram?.WebApp?.HapticFeedback;
+    if(!h)return;
+    if(kind==='light')h.impactOccurred('light');
+    else if(kind==='medium')h.impactOccurred('medium');
+    else if(kind==='heavy')h.impactOccurred('heavy');
+    else if(kind==='soft')h.impactOccurred('soft');
+    else if(kind==='success')h.notificationOccurred('success');
+    else if(kind==='error')h.notificationOccurred('error');
+  }catch(e){}
+}
+const pointSfx=new Audio('/audio/collect-points.mp3');
+pointSfx.preload='auto';
+function playPointSfx(){
+  try{
+    if(localStorage.getItem('babloohSoundMuted')==='1')return;
+    const vol=Number(localStorage.getItem('babloohSoundVolume'));
+    const gain=Number.isFinite(vol)&&vol>=0&&vol<=1?vol:0.55;
+    if(gain<=0.001)return;
+    const sfx=pointSfx.cloneNode();
+    sfx.volume=gain;
+    void sfx.play();
+  }catch(e){}
+}
+const sprite=new Image();sprite.src='flappy-sprite.webp';
 let state='ready',score=0,best=Number(localStorage.getItem('babloohBest')||0),frame=0,last=0;
 let player={x:92,y:310,vy:0,rot:0},pipes=[];
 bestEl.textContent='РЕКОРД: '+best;
@@ -60,10 +86,10 @@ function render(){background();pipes.forEach(pipe);drawGround();drawPlayer()}
 function addPipe(){let top=135+Math.random()*235,gap=190;pipes.push({x:W+10,top,bottom:top+gap,passed:false})}
 function reset(){score=0;frame=0;player={x:92,y:315,vy:0,rot:0};pipes=[];addPipe();addPipe();pipes[1].x=650;scoreEl.textContent='0'}
 function flap(){if(state==='ready'){begin();return}if(state==='playing')player.vy=-6.8}
-function begin(){reset();state='playing';overlay.querySelector('.loss-image').style.display='none';overlay.style.display='none';player.vy=-6.8;last=performance.now();requestAnimationFrame(loop)}
-function end(){if(state==='over')return;submitBabloohScore('flappy', score);state='over';best=Math.max(best,score);localStorage.setItem('babloohBest',best);bestEl.textContent='РЕКОРД: '+best;document.getElementById('headline').textContent='Игра окончена!';document.getElementById('message').textContent='Твой результат: '+score+'. Попробуешь побить рекорд?';startBtn.textContent='Ещё раз';overlay.querySelector('.loss-image').style.display='block';overlay.style.display='flex'}
+function begin(){tgHaptic('soft');reset();state='playing';overlay.querySelector('.loss-image').style.display='none';overlay.style.display='none';player.vy=-6.8;last=performance.now();requestAnimationFrame(loop)}
+function end(){if(state==='over')return;tgHaptic('error');submitBabloohScore('flappy', score);state='over';best=Math.max(best,score);localStorage.setItem('babloohBest',best);bestEl.textContent='РЕКОРД: '+best;document.getElementById('headline').textContent='Игра окончена!';document.getElementById('message').textContent='Твой результат: '+score+'. Давай деточка, попробуешь побить рекорд?';startBtn.textContent='Ещё раз';overlay.querySelector('.loss-image').style.display='block';overlay.style.display='flex'}
 function loop(t){if(state!=='playing')return;let dt=Math.min((t-last)/16.67,2);last=t;frame+=dt;player.vy+=.36*dt;player.y+=player.vy*dt;
- pipes.forEach(p=>{p.x-=2.65*dt;if(!p.passed&&p.x+64<player.x){p.passed=true;score++;scoreEl.textContent=score}});
+ pipes.forEach(p=>{p.x-=2.65*dt;if(!p.passed&&p.x+64<player.x){p.passed=true;score++;tgHaptic('light');playPointSfx();scoreEl.textContent=score}});
  if(pipes[pipes.length-1].x<225)addPipe();pipes=pipes.filter(p=>p.x>-90);
  const px=player.x,py=player.y,pw=34,ph=38;
  if(py+ph>ground||py-ph<0)end();
