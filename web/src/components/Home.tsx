@@ -18,7 +18,7 @@ function tipHidden(key: string) {
   }
 }
 
-export type OpenGameId = GameId | 'ninja-react' | 'snake-react'
+export type OpenGameId = GameId | 'ninja-react' | 'snake-react' | 'match-react'
 
 type Props = {
   onOpenGame: (id: OpenGameId, src?: string) => void
@@ -31,8 +31,15 @@ const GAMES: {
   file?: string
   icon: string
   iconClass?: string
-  react?: 'ninja' | 'snake'
+  react?: 'ninja' | 'snake' | 'match'
 }[] = [
+  {
+    id: 'match',
+    title: 'BABLOOH MATCH',
+    desc: 'Соединяй лица и взрывай бонусы',
+    react: 'match',
+    icon: '/games/match/person1.webp',
+  },
   {
     id: 'flappy',
     title: 'FLAPPY BABLOOH',
@@ -79,6 +86,7 @@ const LABELS: Record<GameId, string> = {
   doodle: 'Doodle',
   ninja: 'Ninja',
   snake: 'Snake',
+  match: 'Match',
 }
 
 const NAMES: Record<GameId, string> = {
@@ -87,6 +95,7 @@ const NAMES: Record<GameId, string> = {
   doodle: 'Doodle Bablooh',
   ninja: 'Bablooh Ninja',
   snake: 'Snake Bablooh',
+  match: 'Bablooh Match',
 }
 
 export function Home({ onOpenGame }: Props) {
@@ -156,7 +165,8 @@ export function Home({ onOpenGame }: Props) {
   const openGame = (g: (typeof GAMES)[number]) => {
     hapticLight()
     if (g.id === 'snake' && snakeTipOpen) dismissSnakeTip(snakeDontShowAgain)
-    if (g.react === 'ninja') onOpenGame('ninja-react')
+    if (g.react === 'match') onOpenGame('match-react')
+    else if (g.react === 'ninja') onOpenGame('ninja-react')
     else if (g.react === 'snake') onOpenGame('snake-react')
     else onOpenGame(g.id, g.file)
   }

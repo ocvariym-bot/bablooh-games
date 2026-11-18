@@ -12,6 +12,7 @@ type View =
   | { kind: 'iframe'; gameId: GameId; src: string }
   | { kind: 'ninja' }
   | { kind: 'snake' }
+  | { kind: 'match' }
 
 export default function App() {
   const [view, setView] = useState<View>({ kind: 'home' })
@@ -52,7 +53,8 @@ export default function App() {
             key="home"
             onOpenGame={(id: OpenGameId, src) => {
               audioManager.unlock()
-              if (id === 'ninja-react') setView({ kind: 'ninja' })
+              if (id === 'match-react') setView({ kind: 'match' })
+              else if (id === 'ninja-react') setView({ kind: 'ninja' })
               else if (id === 'snake-react') setView({ kind: 'snake' })
               else if (src) setView({ kind: 'iframe', gameId: id, src })
             }}
@@ -61,7 +63,9 @@ export default function App() {
           <GamePlayer
             key="player"
             mode={
-              view.kind === 'ninja'
+              view.kind === 'match'
+                ? 'match'
+                : view.kind === 'ninja'
                 ? 'ninja'
                 : view.kind === 'snake'
                   ? 'snake'
