@@ -20,6 +20,16 @@ body,
   min-height: 100%;
 }
 
+html,
+body {
+  overscroll-behavior: none;
+}
+
+.game-container,
+canvas {
+  touch-action: none;
+}
+
 body {
   font-family: var(--font);
   color: #fff;
