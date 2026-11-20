@@ -38,7 +38,8 @@ const GAMES: {
     title: 'BABLOOH MATCH',
     desc: 'Соединяй лица и взрывай бонусы',
     react: 'match',
-    icon: '/games/match/person1.webp',
+    icon: '/characters/match.webp',
+    iconClass: 'game-icon-img--match',
   },
   {
     id: 'flappy',
